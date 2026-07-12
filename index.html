@@ -231,7 +231,7 @@
   .hero-title-block {
     position: absolute;
     top: 5vh;
-    left: 3.5vw;
+    left: 6.5vw;
     z-index: 20;
     pointer-events: none;
   }
@@ -259,6 +259,7 @@
     user-select: none;
     white-space: nowrap;
     line-height: 1;
+    margin-left: -8px;
   }
 
   /* letter-by-letter reveal: the outer span masks (so an unrevealed
@@ -332,11 +333,11 @@
   .side-tab {
     position: absolute;
     top: 0;
-    right: 0;
+    left: 0;
     width: 42px;
     height: 100%;
     background: rgba(245, 242, 234, 0.1);
-    border-left: 1px solid rgba(245, 242, 234, 0.25);
+    border-right: 1px solid rgba(245, 242, 234, 0.25);
     z-index: 20;
     pointer-events: none;
     display: flex;
@@ -359,7 +360,7 @@
 
   .hero-card {
     position: absolute;
-    left: 3.5vw;
+    right: 3.5vw;
     top: 44vh;
     width: 22vw;
     min-width: 260px;
@@ -434,8 +435,8 @@
 
   .hero-desc {
     position: absolute;
-    right: 6.5vw;
-    top: 26vh;
+    left: 6.5vw;
+    top: 38vh;
     width: 20vw;
     min-width: 320px;
     color: var(--cream);
