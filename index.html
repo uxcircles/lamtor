@@ -11,16 +11,19 @@
     /* three-phase entrance timeline. each phase starts once the PREVIOUS
        phase is 75% done, not after it fully finishes, so the sequence
        overlaps/cascades instead of stacking three separate waits:
-       phase 1 (0 -> --p1-dur):     background + flip-flop sharpen
+       phase 1 (0 -> --p1-dur):     the flip-flop "scan" beat (toe/ball/
+                                     heel sizing markers -> sole/upper
+                                     line-trace -> crossfade to the real
+                                     photo), then the tabletop blur-clears
+                                     in behind it
        phase 2 (--text-start on):   text/UI fades in, starting at 75%
-                                     through phase 1's blur-out
+                                     through phase 1
        phase 3 (--props-start on):  props fly in, starting at 75%
-                                     through phase 2's text landing
-       last prop lands around --props-start + 1.36s (~2.5s total). */
-    --p1-dur: 0.7s;
-    --text-start: calc(var(--p1-dur) * 0.75);       /* 0.525s */
+                                     through phase 2's text landing */
+    --p1-dur: 1.86s;
+    --text-start: calc(var(--p1-dur) * 0.75);       /* 1.395s */
     --text-span: 0.85s;   /* text-start -> last text element (.hint) landed */
-    --props-start: calc(var(--text-start) + var(--text-span) * 0.75); /* ~1.16s */
+    --props-start: calc(var(--text-start) + var(--text-span) * 0.75); /* ~2.03s */
   }
 
   * { box-sizing: border-box; }
@@ -63,7 +66,35 @@
        "filter" is animated here — NOT "transform" — because .photo-frame
        already has a static transform for centering; animating transform
        here would fight that and make the frame jump during the entrance. */
-    animation: frameEnterBlur var(--p1-dur) ease-out backwards;
+    animation: frameEnterBlur 0.5s ease-out backwards;
+    animation-delay: 1.36s;
+  }
+
+  /* the scan/reticle/trace sequence needs to render crisp WHILE the frame
+     behind it is still blurred, so it can't live inside .photo-frame —
+     "filter" on an ancestor rasterizes its whole subtree, blurring every
+     descendant along with it. .scan-stage is a sibling with the exact
+     same sizing math as .photo-frame (so it lines up with it pixel for
+     pixel), just never touched by frameEnterBlur. */
+  .scan-stage {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: max(100vw, calc(100vh * 1536 / 1024));
+    aspect-ratio: 1536 / 1024;
+    z-index: 12;
+    pointer-events: none;
+  }
+
+  /* mirrors .stage-inner's position within the frame exactly, so the
+     scan overlay lands precisely where the real flip-flop sits */
+  .scan-anchor {
+    position: absolute;
+    left: 44%;
+    top: 23%;
+    width: 15%;
+    aspect-ratio: 267 / 663;
   }
 
   @keyframes frameEnterBlur {
@@ -650,6 +681,7 @@
   .flipflop-wrap {
     position: absolute;
     inset: 0;
+    opacity: 1;
     will-change: transform;
     transition: transform 0.15s ease-out;
     /* same tight contact-shadow language as .prop, just scaled up a bit
@@ -659,6 +691,16 @@
       drop-shadow(-9px 14px 6px rgba(10,8,4,0.3))
       drop-shadow(-18px 26px 12px rgba(10,8,4,0.14));
     pointer-events: auto;
+    /* the real photo only shows once the scan/trace sequence below has
+       crossfaded out — animation is opacity-only (JS never touches
+       opacity here, only transform), so fill-mode:backwards is safe */
+    animation: photoRevealFade 0.35s ease-out backwards;
+    animation-delay: 1.31s;
+  }
+
+  @keyframes photoRevealFade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   .flipflop-wrap img {
@@ -668,6 +710,202 @@
     object-fit: contain;
     will-change: transform;
     transition: transform 0.15s ease-out;
+  }
+
+  /* --- entrance "scan" sequence: a brief camera-reticle pulse, then the
+     sole + upper get traced as line art, then it crossfades into the
+     real photo above. purely decorative + non-interactive throughout,
+     and removed from the DOM entirely once done (see JS) so it can never
+     intercept hover/clicks on the real flip-flop underneath. */
+  .entrance-scan {
+    position: absolute;
+    inset: 0;
+    z-index: 11;
+    pointer-events: none;
+    opacity: 1;
+    animation: scanGroupFade 0.35s ease-out backwards;
+    animation-delay: 1.31s;
+  }
+
+  @keyframes scanGroupFade {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  /* three "blueprint sizing" reference points — toe, ball (widest
+     point), heel — each a PAIR of concentric dashed circles (outer +
+     inner, inner inset ~36px in the sole svg's own coordinate space)
+     with static orange caliper ticks at the cardinal points. they grow
+     in (staggered per marker), the dashed circles spin slowly the whole
+     time they're visible, and they only fade out once the sole trace
+     outline is already visibly underway (not on a fixed timer, and not
+     the same instant it starts) — see the shared 0.58s delay on
+     markerFadeOut below, timed to when the upper trace begins, by which
+     point the sole trace has already been drawing for ~0.14s. diameters
+     given as 138/183/156 (outer) in the
+     sole svg's 191-wide viewBox, inner = outer-36, both converted to %
+     of .scan-anchor's width (the sole render is letterboxed to ~88% of
+     the anchor's width, see .scan-trace-sole). */
+  .scan-marker {
+    position: absolute;
+    left: 50%;
+    aspect-ratio: 1 / 1;
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    /* markerGrow owns opacity/transform on the way IN (backwards fill
+       so it stays hidden during its own stagger delay); markerFadeOut
+       owns opacity on the way OUT. giving markerFadeOut fill-mode:none
+       (the default) is deliberate — if it were "backwards" too, its
+       pre-delay phase would fight markerGrow for control of opacity
+       from t=0 and the fade-in would never actually show.
+       whole grow -> hold -> fade sequence totals 1s: heel (the
+       latest-staggered marker) finishes growing at 0.2 + 0.35 = 0.55s,
+       fadeOut then starts at 0.55s (after every marker has finished
+       growing, so it can never interrupt a still-rising opacity — that
+       was the earlier flicker) and finishes at 0.55 + 0.45 = 1.0s. */
+    animation:
+      markerGrow 0.35s cubic-bezier(0.16, 1, 0.3, 1) backwards,
+      markerFadeOut 0.45s ease-in forwards;
+  }
+
+  .scan-marker-toe  { width: 64.4%; top: 12.7%; left: 45%;   animation-delay: 0s,   0.55s; }
+  .scan-marker-ball { width: 88%;   top: 35.2%; left: 54%;   animation-delay: 0.1s, 0.55s; }
+  .scan-marker-heel { width: 76.5%; top: 85%;  left: 52.3%;  animation-delay: 0.2s, 0.55s; }
+
+  @keyframes markerGrow {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.3); }
+    to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  @keyframes markerFadeOut {
+    from { opacity: 1; }
+    to   { opacity: 0; }
+  }
+
+  .scan-marker-circles {
+    position: absolute;
+    inset: 0;
+    animation: circleSpin 5s linear infinite;
+    /* a rotating dashed stroke re-rasterizes every frame; without a
+       promoted compositing layer that can show up as a faint flicker as
+       the browser repaints the dash pattern's anti-aliased edges each
+       frame instead of just moving an already-rendered layer. */
+    will-change: transform;
+  }
+
+  @keyframes circleSpin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  .circle-outer, .circle-inner {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    aspect-ratio: 1 / 1;
+    transform: translate(-50%, -50%);
+  }
+
+  .circle-outer { width: 100%; }
+
+  .scan-marker-toe .circle-inner  { width: 47.8%; }
+  .scan-marker-ball .circle-inner { width: 60.7%; }
+  .scan-marker-heel .circle-inner { width: 53.8%; }
+
+  /* scoped to .scan-marker-circles (not the broader .scan-marker) so
+     this doesn't also match the small orange dots inside
+     .scan-marker-ticks, which are <circle> elements too */
+  .scan-marker-circles circle {
+    fill: none;
+    stroke: #f5f2ea;
+    stroke-width: 2;
+    stroke-dasharray: 3 5;
+    opacity: 0.85;
+    /* circle-outer and circle-inner are separate <svg>s rendered at
+       different sizes (100% vs a smaller %), so the same stroke-width:2
+       in their own local viewBox maps to more actual screen pixels on
+       the bigger one. non-scaling-stroke keeps both visually the same
+       thickness regardless of how large each circle renders. */
+    vector-effect: non-scaling-stroke;
+  }
+
+  .scan-marker-ticks {
+    position: absolute;
+    inset: 0;
+  }
+
+  .scan-marker-ticks line {
+    stroke: #e8823c;
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .scan-marker-ticks circle {
+    fill: #e8823c;
+  }
+
+  .scan-marker-ticks rect {
+    fill: #e8823c;
+  }
+
+  /* the squares/dots live inside each marker's own scaled SVG, so at the
+     same viewBox size (6 units, r=2) they render at different ABSOLUTE
+     screen sizes per marker (ball is a much bigger circle than toe).
+     these scale factors counteract that, using toe as the baseline
+     (scale 1), so all three markers' squares/dots end up the same
+     physical size regardless of how big the marker itself is:
+     ball = toe-width / ball-width = 64.4/88 ≈ 0.732
+     heel = toe-width / heel-width = 64.4/76.5 ≈ 0.842 */
+  .scan-marker-ball .scan-marker-ticks rect,
+  .scan-marker-ball .scan-marker-ticks circle {
+    transform: scale(0.732);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .scan-marker-heel .scan-marker-ticks rect,
+  .scan-marker-heel .scan-marker-ticks circle {
+    transform: scale(0.842);
+    transform-box: fill-box;
+    transform-origin: center;
+  }
+
+  .scan-trace {
+    position: absolute;
+    inset: 0;
+  }
+
+  .scan-trace-sole {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: translateX(7px);
+  }
+
+  .scan-trace-upper {
+    position: absolute;
+    left: 50%;
+    top: 13%;
+    width: 100%;
+    aspect-ratio: 219 / 256;
+    transform: translateX(-50%);
+  }
+
+  .scan-trace path {
+    fill: none;
+    stroke: var(--cream);
+    stroke-width: 2;
+    opacity: 0.9;
+    animation: lineDraw 0.45s cubic-bezier(0.65, 0, 0.35, 1) backwards;
+  }
+
+  .scan-trace-sole path { animation-delay: 0.8s; }
+  .scan-trace-upper path { animation-delay: 0.94s; }
+
+  @keyframes lineDraw {
+    from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+    to   { stroke-dasharray: 1; stroke-dashoffset: 0; }
   }
 
   .cursor-dot {
@@ -734,6 +972,98 @@
     </div>
   </div>
 
+  <!-- lives outside .photo-frame on purpose: .photo-frame's blur filter
+       rasterizes its whole subtree, and this needs to render crisp while
+       the frame behind it is still blurred. .scan-stage/.scan-anchor
+       reproduce .photo-frame/.stage-inner's exact positioning math so it
+       still lines up pixel-for-pixel with the real flip-flop. -->
+  <div class="scan-stage">
+    <div class="scan-anchor">
+      <div class="entrance-scan" id="entranceScan">
+        <div class="scan-marker scan-marker-toe">
+          <div class="scan-marker-circles">
+            <svg class="circle-outer" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+            <svg class="circle-inner" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+          </div>
+          <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
+            <line x1="28" y1="2" x2="72" y2="2"/>
+            <circle cx="28" cy="2" r="2"/>
+            <circle cx="72" cy="2" r="2"/>
+            <rect x="47" y="-1" width="6" height="6"/>
+            <line x1="28" y1="98" x2="72" y2="98"/>
+            <circle cx="28" cy="98" r="2"/>
+            <circle cx="72" cy="98" r="2"/>
+            <rect x="47" y="95" width="6" height="6"/>
+            <line x1="2" y1="28" x2="2" y2="72"/>
+            <circle cx="2" cy="28" r="2"/>
+            <circle cx="2" cy="72" r="2"/>
+            <rect x="-1" y="47" width="6" height="6"/>
+            <line x1="98" y1="28" x2="98" y2="72"/>
+            <circle cx="98" cy="28" r="2"/>
+            <circle cx="98" cy="72" r="2"/>
+            <rect x="95" y="47" width="6" height="6"/>
+          </svg>
+        </div>
+        <div class="scan-marker scan-marker-ball">
+          <div class="scan-marker-circles">
+            <svg class="circle-outer" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+            <svg class="circle-inner" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+          </div>
+          <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
+            <line x1="28" y1="2" x2="72" y2="2"/>
+            <circle cx="28" cy="2" r="2"/>
+            <circle cx="72" cy="2" r="2"/>
+            <rect x="47" y="-1" width="6" height="6"/>
+            <line x1="28" y1="98" x2="72" y2="98"/>
+            <circle cx="28" cy="98" r="2"/>
+            <circle cx="72" cy="98" r="2"/>
+            <rect x="47" y="95" width="6" height="6"/>
+            <line x1="2" y1="28" x2="2" y2="72"/>
+            <circle cx="2" cy="28" r="2"/>
+            <circle cx="2" cy="72" r="2"/>
+            <rect x="-1" y="47" width="6" height="6"/>
+            <line x1="98" y1="28" x2="98" y2="72"/>
+            <circle cx="98" cy="28" r="2"/>
+            <circle cx="98" cy="72" r="2"/>
+            <rect x="95" y="47" width="6" height="6"/>
+          </svg>
+        </div>
+        <div class="scan-marker scan-marker-heel">
+          <div class="scan-marker-circles">
+            <svg class="circle-outer" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+            <svg class="circle-inner" viewBox="0 0 100 100" fill="none"><circle cx="50" cy="50" r="48"/></svg>
+          </div>
+          <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
+            <line x1="28" y1="2" x2="72" y2="2"/>
+            <circle cx="28" cy="2" r="2"/>
+            <circle cx="72" cy="2" r="2"/>
+            <rect x="47" y="-1" width="6" height="6"/>
+            <line x1="28" y1="98" x2="72" y2="98"/>
+            <circle cx="28" cy="98" r="2"/>
+            <circle cx="72" cy="98" r="2"/>
+            <rect x="47" y="95" width="6" height="6"/>
+            <line x1="2" y1="28" x2="2" y2="72"/>
+            <circle cx="2" cy="28" r="2"/>
+            <circle cx="2" cy="72" r="2"/>
+            <rect x="-1" y="47" width="6" height="6"/>
+            <line x1="98" y1="28" x2="98" y2="72"/>
+            <circle cx="98" cy="28" r="2"/>
+            <circle cx="98" cy="72" r="2"/>
+            <rect x="95" y="47" width="6" height="6"/>
+          </svg>
+        </div>
+
+        <svg class="scan-trace scan-trace-sole" viewBox="0 0 191 539" fill="none">
+          <path pathLength="1" d="M139.237 29.5C126.737 16.5 106.237 0.5 72.7371 0.5C24.9791 2.35212 7.23626 49 2.73537 84.5C-1.66194 119.183 0.736362 147.5 7.23709 196C14.6463 251.278 16.2371 289.5 16.2371 321C16.2371 371 14.2371 409.5 14.2371 461C14.2371 512.5 48.2371 538 98.2371 538C147.237 538 167.237 503.5 170.737 465C174.237 426.5 170.737 375 174.737 315.5C178.737 256 190.737 241 190.237 188.5C189.738 136.102 179.278 106.117 171.781 84.6258L171.737 84.5C164.237 63 151.737 42.5 139.237 29.5Z"/>
+        </svg>
+
+        <svg class="scan-trace scan-trace-upper" viewBox="0 0 219 256" fill="none">
+          <path pathLength="1" d="M185 8.44356C181.5 8.94356 159 20.4434 114.5 20.4434C80.9997 20.4434 44.9999 3.94272 39.9999 1.94272C34.9999 -0.0572809 31.9999 -0.0572809 30.9999 2.44272C29.9999 4.94272 31.4999 7.44272 31.9999 8.44272C32.4999 9.44272 24.4999 29.4427 20.4999 41.9427C16.4999 54.4427 10.9999 77.4427 10.4999 83.9427C10.0999 89.1427 12.9999 94.7761 14.4999 96.9427C12.6666 98.6094 8.49988 102.943 6.4997 106.943C3.99947 111.943 0.50032 118.372 0.5 125.443C0.49957 134.943 3.4997 166.943 6.4997 190.943C9.4997 214.943 15.9997 229.943 26.4997 239.443C36.9997 248.943 49.5002 253.943 56.4999 253.943C63.4997 253.943 67.4997 250.943 67.4997 249.943C67.4997 249.143 66.833 247.943 66.4997 247.443C66.6664 246.943 66.8997 245.043 66.4997 241.443C65.9997 236.943 60.4997 234.443 60.4997 232.943C60.4997 231.443 62.4999 223.943 62.4999 207.943C62.4999 191.943 57.9997 186.943 57.9997 184.943C57.9997 182.943 60.9997 178.943 60.4997 170.443C59.9997 161.943 48.4997 157.443 40.9997 157.443C34.9997 157.443 28.833 154.443 26.4997 152.943C28.4997 149.776 33.2394 140.349 40.9997 131.943C46.9999 125.443 55.9999 117.943 65.9999 112.443C75.9999 106.943 95.9997 103.443 118.5 104.943C141 106.443 155 111.443 165 118.443C173 124.043 186.333 145.109 192 154.943C191.5 155.276 189.9 156.043 187.5 156.443C184.5 156.943 185 155.943 181.5 155.943C178 155.943 175.5 157.943 175.5 161.443C175.5 162.943 173.5 163.943 172 168.943C170.8 172.943 172.5 177.276 173.5 178.943C172.666 181.609 170.5 189.943 168.5 201.943C166.5 213.943 167 225.609 167.5 229.943C166.833 230.943 165.2 233.743 164 236.943C162.5 240.943 164.5 244.943 165 245.943C165.5 246.943 165.5 247.943 165.5 249.443C165.5 250.943 165.5 252.443 168.5 254.443C171.5 256.443 179.5 252.443 191 244.443C202.5 236.443 208 213.943 211 200.943C214 187.943 215.5 157.943 216.5 147.443C217.5 136.943 219 127.943 216.5 120.443C214.5 114.443 210 106.609 208 103.443C210.833 101.109 216.5 95.7427 216.5 92.9427C216.5 89.4427 211.5 68.9427 204 43.9427C198 23.9427 192.5 14.9427 190.5 12.9427C190.666 12.1097 190.9 10.2436 190.5 9.44356C190 8.44356 188.5 7.94356 185 8.44356Z"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
   <div class="hint">
     <span class="hint-chevron">
       <span class="hint-chevron-ring"></span>
@@ -751,6 +1081,16 @@
 <div class="cursor-dot" id="cursorDot"></div>
 
 <script>
+  // Once the intro scan overlay (reticle + line-trace) has faded out,
+  // remove it from the DOM entirely so it can never sit on top of the
+  // real flip-flop and swallow hover/click events.
+  const entranceScan = document.getElementById('entranceScan');
+  if (entranceScan) {
+    entranceScan.addEventListener('animationend', (ev) => {
+      if (ev.target === entranceScan) entranceScan.remove();
+    });
+  }
+
   // Per-object hover interaction: each prop
   // is idle until the cursor is actually over/near it, then it senses the
   // cursor's position relative to its own center and dodges away from it.
