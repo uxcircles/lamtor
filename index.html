@@ -15,8 +15,9 @@
        phase 1 (0 -> --p1-dur):     the flip-flop "scan" beat (toe/ball/
                                      heel sizing markers -> sole/upper
                                      line-trace -> crossfade to the real
-                                     photo), then the tabletop blur-clears
-                                     in behind it
+                                     photo) on a flat blueprint-blue
+                                     backdrop, then the wood tabletop
+                                     photo fades in behind it
        phase 2 (--text-start on):   text/UI fades in, starting at 75%
                                      through phase 1
        phase 3 (--props-start on):  props fly in, starting at 75%
@@ -59,24 +60,35 @@
     transform: translate(-50%, -50%);
     width: max(100vw, calc(100vh * 1536 / 1024));
     aspect-ratio: 1536 / 1024;
+    /* the "resting" state is a flat blueprint blue, not the wood photo —
+       .photo-frame-bg (below) is a separate layer that fades the real
+       photo in on top of this once the scan/trace sequence is done, so
+       the product appears to develop out of a blueprint before the room
+       around it does. */
+    background: #0d2847;
+    overflow: hidden;
+  }
+
+  .photo-frame-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
     background-image: url('assets/bg-wood-table-clean-window-light.png');
     background-size: 100% 100%;
-    overflow: hidden;
-    /* the whole tabletop (background + every prop + the flip-flop, since
-       they're all descendants) starts blurred and sharpens on load. only
-       "filter" is animated here — NOT "transform" — because .photo-frame
-       already has a static transform for centering; animating transform
-       here would fight that and make the frame jump during the entrance. */
-    animation: frameEnterBlur 0.5s ease-out backwards;
+    opacity: 0;
+    /* same timing slot the old blur-clear used to occupy — only the
+       property/element changed (opacity fade-in on its own layer,
+       instead of a blur filter on the whole frame). */
+    animation: bgFadeIn 0.5s ease-out forwards;
     animation-delay: 1.36s;
   }
 
-  /* the scan/reticle/trace sequence needs to render crisp WHILE the frame
-     behind it is still blurred, so it can't live inside .photo-frame —
-     "filter" on an ancestor rasterizes its whole subtree, blurring every
-     descendant along with it. .scan-stage is a sibling with the exact
-     same sizing math as .photo-frame (so it lines up with it pixel for
-     pixel), just never touched by frameEnterBlur. */
+  /* .photo-frame no longer applies a blur filter (that reveal is now
+     .photo-frame-bg's opacity fade-in instead), so this no longer HAS to
+     live outside .photo-frame — kept as a sibling anyway since it
+     already works and .scan-anchor's positioning math is tuned against
+     it; folding it back in isn't worth the risk of re-tuning every
+     marker/trace position. still a pixel-for-pixel match to .photo-frame. */
   .scan-stage {
     position: absolute;
     left: 50%;
@@ -98,9 +110,9 @@
     aspect-ratio: 267 / 663;
   }
 
-  @keyframes frameEnterBlur {
-    from { filter: blur(4px); }
-    to   { filter: blur(0); }
+  @keyframes bgFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
   }
 
   .frame-overlay {
@@ -109,6 +121,12 @@
     background: linear-gradient(rgba(10,8,4,0.15), rgba(10,8,4,0.35));
     pointer-events: none;
     z-index: 3;
+    /* this tint only makes sense once the wood photo is visible — fades
+       in on the same timing slot as .photo-frame-bg so it arrives with
+       the table instead of sitting over the flat blueprint blue. */
+    opacity: 0;
+    animation: bgFadeIn 0.5s ease-out forwards;
+    animation-delay: 1.36s;
   }
 
   /* dappled light drifting slowly and irregularly across the whole scene,
@@ -151,16 +169,21 @@
     background-repeat: no-repeat;
     mix-blend-mode: multiply;
     filter: blur(2px);
-    opacity: 0.6;
+    opacity: 0;
     pointer-events: none;
     z-index: 15;
-    /* the whole layer physically translates by real pixel amounts (not a
-       subtle %/background-position nudge) so the motion is unmistakable
-       no matter how small the individual blobs are — this is the same
+    /* two animations: windShadow drifts it forever (transform), and
+       windFadeIn (opacity, one-shot) brings it in on the same timing
+       slot as .photo-frame-bg so the shadow only appears once the wood
+       it's supposed to be shadowing is actually visible. the whole
+       layer physically translates by real pixel amounts (not a subtle
+       %/background-position nudge) so the motion is unmistakable no
+       matter how small the individual blobs are — this is the same
        technique as a CSS "parallax drift", just applied to shadow blobs
        instead of a background image. inset:-10% gives it room to slide
        without ever revealing an edge. */
-    animation: windShadow 5s ease-in-out infinite;
+    animation: windShadow 5s ease-in-out infinite, windFadeIn 0.5s ease-out forwards;
+    animation-delay: 0s, 1.36s;
   }
 
   @keyframes windShadow {
@@ -169,6 +192,11 @@
     50%  { transform: translate(34px, -24px); }
     75%  { transform: translate(-22px, -34px); }
     100% { transform: translate(0px, 0px); }
+  }
+
+  @keyframes windFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 0.6; }
   }
 
   /* a long, thin streak of shadow tilted ~45deg in the top-right, echoing
@@ -188,6 +216,12 @@
     z-index: 15;
     pointer-events: none;
     overflow: visible;
+    /* same reasoning as .frame-overlay/.light-wind: this is meant to
+       read as light falling across the wood table, so it shouldn't be
+       visible before the table itself is. */
+    opacity: 0;
+    animation: bgFadeIn 0.5s ease-out forwards;
+    animation-delay: 1.36s;
   }
 
   .light-wind-streak-inner {
@@ -957,6 +991,7 @@
   </div>
 
   <div class="photo-frame">
+    <div class="photo-frame-bg"></div>
     <div class="frame-overlay"></div>
     <div class="light-wind"></div>
     <div class="light-wind-streak"><div class="light-wind-streak-inner"></div></div>
