@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>LAMTOR-1 — Hero Parallax Demo (layered)</title>
+<link rel="icon" type="image/png" href="assets/favicon.png">
 <style>
   :root {
     --navy: #1E5AA8;
@@ -192,7 +193,7 @@
   .light-wind-streak-inner {
     position: absolute;
     inset: -60%;
-    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(66, 40, 20, 0.45), transparent 72%);
+    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(196, 162, 118, 0.55), transparent 72%);
     mix-blend-mode: multiply;
     filter: blur(3px);
     animation: windShadow 5s ease-in-out infinite;
@@ -206,7 +207,7 @@
   }
 
   .light-wind-streak.is-second .light-wind-streak-inner {
-    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(96, 56, 24, 0.45), transparent 72%);
+    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(216, 182, 138, 0.5), transparent 72%);
     animation-delay: -2s; /* offset so the two streaks don't drift in lockstep */
   }
 
@@ -259,7 +260,7 @@
     user-select: none;
     white-space: nowrap;
     line-height: 1;
-    margin-left: -8px;
+    margin-left: -0.5vw;
   }
 
   /* letter-by-letter reveal: the outer span masks (so an unrevealed
@@ -336,8 +337,8 @@
     left: 0;
     width: 42px;
     height: 100%;
-    background: rgba(245, 242, 234, 0.1);
-    border-right: 1px solid rgba(245, 242, 234, 0.25);
+    background: rgba(60, 38, 20, 0.4);
+    border-right: 1px solid rgba(180, 140, 100, 0.25);
     z-index: 20;
     pointer-events: none;
     display: flex;
@@ -365,8 +366,8 @@
     width: 22vw;
     min-width: 260px;
     padding: 40px 34px;
-    border: 1px solid rgba(245, 242, 234, 0.1);
-    background: rgba(245, 242, 234, 0.1);
+    border: 1px solid rgba(180, 140, 100, 0.25);
+    background: rgba(60, 38, 20, 0.4);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     z-index: 20;
@@ -833,20 +834,25 @@
   .scan-marker-ticks {
     position: absolute;
     inset: 0;
+    /* the diamond end-caps (rotated squares) and the center circles sit
+       right at the viewBox edge (e.g. a diamond centered at y=2, rotated
+       45deg, dips to y≈-0.8) — SVG clips to its viewBox by default, so
+       without this those tips/edges get cut off. */
+    overflow: visible;
   }
 
   .scan-marker-ticks line {
-    stroke: #e8823c;
+    stroke: #0B99FF;
     stroke-width: 1.5;
     vector-effect: non-scaling-stroke;
   }
 
   .scan-marker-ticks circle {
-    fill: #e8823c;
+    fill: #0B99FF;
   }
 
   .scan-marker-ticks rect {
-    fill: #e8823c;
+    fill: #0B99FF;
   }
 
   /* the squares/dots live inside each marker's own scaled SVG, so at the
@@ -988,21 +994,21 @@
           </div>
           <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
             <line x1="28" y1="2" x2="72" y2="2"/>
-            <circle cx="28" cy="2" r="2"/>
-            <circle cx="72" cy="2" r="2"/>
-            <rect x="47" y="-1" width="6" height="6"/>
+            <rect x="26" y="0" width="4" height="4" transform="rotate(45 28 2)"/>
+            <rect x="70" y="0" width="4" height="4" transform="rotate(45 72 2)"/>
+            <circle cx="50" cy="2" r="3"/>
             <line x1="28" y1="98" x2="72" y2="98"/>
-            <circle cx="28" cy="98" r="2"/>
-            <circle cx="72" cy="98" r="2"/>
-            <rect x="47" y="95" width="6" height="6"/>
+            <rect x="26" y="96" width="4" height="4" transform="rotate(45 28 98)"/>
+            <rect x="70" y="96" width="4" height="4" transform="rotate(45 72 98)"/>
+            <circle cx="50" cy="98" r="3"/>
             <line x1="2" y1="28" x2="2" y2="72"/>
-            <circle cx="2" cy="28" r="2"/>
-            <circle cx="2" cy="72" r="2"/>
-            <rect x="-1" y="47" width="6" height="6"/>
+            <rect x="0" y="26" width="4" height="4" transform="rotate(45 2 28)"/>
+            <rect x="0" y="70" width="4" height="4" transform="rotate(45 2 72)"/>
+            <circle cx="2" cy="50" r="3"/>
             <line x1="98" y1="28" x2="98" y2="72"/>
-            <circle cx="98" cy="28" r="2"/>
-            <circle cx="98" cy="72" r="2"/>
-            <rect x="95" y="47" width="6" height="6"/>
+            <rect x="96" y="26" width="4" height="4" transform="rotate(45 98 28)"/>
+            <rect x="96" y="70" width="4" height="4" transform="rotate(45 98 72)"/>
+            <circle cx="98" cy="50" r="3"/>
           </svg>
         </div>
         <div class="scan-marker scan-marker-ball">
@@ -1012,21 +1018,21 @@
           </div>
           <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
             <line x1="28" y1="2" x2="72" y2="2"/>
-            <circle cx="28" cy="2" r="2"/>
-            <circle cx="72" cy="2" r="2"/>
-            <rect x="47" y="-1" width="6" height="6"/>
+            <rect x="26" y="0" width="4" height="4" transform="rotate(45 28 2)"/>
+            <rect x="70" y="0" width="4" height="4" transform="rotate(45 72 2)"/>
+            <circle cx="50" cy="2" r="3"/>
             <line x1="28" y1="98" x2="72" y2="98"/>
-            <circle cx="28" cy="98" r="2"/>
-            <circle cx="72" cy="98" r="2"/>
-            <rect x="47" y="95" width="6" height="6"/>
+            <rect x="26" y="96" width="4" height="4" transform="rotate(45 28 98)"/>
+            <rect x="70" y="96" width="4" height="4" transform="rotate(45 72 98)"/>
+            <circle cx="50" cy="98" r="3"/>
             <line x1="2" y1="28" x2="2" y2="72"/>
-            <circle cx="2" cy="28" r="2"/>
-            <circle cx="2" cy="72" r="2"/>
-            <rect x="-1" y="47" width="6" height="6"/>
+            <rect x="0" y="26" width="4" height="4" transform="rotate(45 2 28)"/>
+            <rect x="0" y="70" width="4" height="4" transform="rotate(45 2 72)"/>
+            <circle cx="2" cy="50" r="3"/>
             <line x1="98" y1="28" x2="98" y2="72"/>
-            <circle cx="98" cy="28" r="2"/>
-            <circle cx="98" cy="72" r="2"/>
-            <rect x="95" y="47" width="6" height="6"/>
+            <rect x="96" y="26" width="4" height="4" transform="rotate(45 98 28)"/>
+            <rect x="96" y="70" width="4" height="4" transform="rotate(45 98 72)"/>
+            <circle cx="98" cy="50" r="3"/>
           </svg>
         </div>
         <div class="scan-marker scan-marker-heel">
@@ -1036,21 +1042,21 @@
           </div>
           <svg class="scan-marker-ticks" viewBox="0 0 100 100" fill="none">
             <line x1="28" y1="2" x2="72" y2="2"/>
-            <circle cx="28" cy="2" r="2"/>
-            <circle cx="72" cy="2" r="2"/>
-            <rect x="47" y="-1" width="6" height="6"/>
+            <rect x="26" y="0" width="4" height="4" transform="rotate(45 28 2)"/>
+            <rect x="70" y="0" width="4" height="4" transform="rotate(45 72 2)"/>
+            <circle cx="50" cy="2" r="3"/>
             <line x1="28" y1="98" x2="72" y2="98"/>
-            <circle cx="28" cy="98" r="2"/>
-            <circle cx="72" cy="98" r="2"/>
-            <rect x="47" y="95" width="6" height="6"/>
+            <rect x="26" y="96" width="4" height="4" transform="rotate(45 28 98)"/>
+            <rect x="70" y="96" width="4" height="4" transform="rotate(45 72 98)"/>
+            <circle cx="50" cy="98" r="3"/>
             <line x1="2" y1="28" x2="2" y2="72"/>
-            <circle cx="2" cy="28" r="2"/>
-            <circle cx="2" cy="72" r="2"/>
-            <rect x="-1" y="47" width="6" height="6"/>
+            <rect x="0" y="26" width="4" height="4" transform="rotate(45 2 28)"/>
+            <rect x="0" y="70" width="4" height="4" transform="rotate(45 2 72)"/>
+            <circle cx="2" cy="50" r="3"/>
             <line x1="98" y1="28" x2="98" y2="72"/>
-            <circle cx="98" cy="28" r="2"/>
-            <circle cx="98" cy="72" r="2"/>
-            <rect x="95" y="47" width="6" height="6"/>
+            <rect x="96" y="26" width="4" height="4" transform="rotate(45 98 28)"/>
+            <rect x="96" y="70" width="4" height="4" transform="rotate(45 98 72)"/>
+            <circle cx="98" cy="50" r="3"/>
           </svg>
         </div>
 
