@@ -76,11 +76,17 @@
     background-image: url('assets/bg-wood-table-clean-window-light.png');
     background-size: 100% 100%;
     opacity: 0;
-    /* same timing slot the old blur-clear used to occupy — only the
-       property/element changed (opacity fade-in on its own layer,
-       instead of a blur filter on the whole frame). */
-    animation: bgFadeIn 0.5s ease-out forwards;
+    /* same timing slot the old blur-clear used to occupy, but now it's
+       its own layer instead of the whole frame, and brings back the
+       blur-to-sharp transition on top of the opacity fade — the table
+       fades in AND sharpens at the same time. */
+    animation: tableFadeIn 0.5s ease-out forwards;
     animation-delay: 1.36s;
+  }
+
+  @keyframes tableFadeIn {
+    from { opacity: 0; filter: blur(4px); }
+    to   { opacity: 1; filter: blur(0); }
   }
 
   /* .photo-frame no longer applies a blur filter (that reveal is now
@@ -728,15 +734,33 @@
       drop-shadow(-18px 26px 12px rgba(10,8,4,0.14));
     pointer-events: auto;
     /* the real photo only shows once the scan/trace sequence below has
-       crossfaded out — animation is opacity-only (JS never touches
-       opacity here, only transform), so fill-mode:backwards is safe */
+       crossfaded out — animation only touches opacity/filter (JS never
+       touches those here, only transform), so fill-mode:backwards is
+       safe. the keyframe repeats the full drop-shadow stack at both
+       ends because "filter" is a single property — without restating
+       it, the animated blur would replace the contact shadow entirely
+       instead of sitting alongside it. */
     animation: photoRevealFade 0.35s ease-out backwards;
     animation-delay: 1.31s;
   }
 
   @keyframes photoRevealFade {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+      opacity: 0;
+      filter:
+        blur(4px)
+        drop-shadow(-3px 5px 2px rgba(10,8,4,0.5))
+        drop-shadow(-9px 14px 6px rgba(10,8,4,0.3))
+        drop-shadow(-18px 26px 12px rgba(10,8,4,0.14));
+    }
+    to {
+      opacity: 1;
+      filter:
+        blur(0)
+        drop-shadow(-3px 5px 2px rgba(10,8,4,0.5))
+        drop-shadow(-9px 14px 6px rgba(10,8,4,0.3))
+        drop-shadow(-18px 26px 12px rgba(10,8,4,0.14));
+    }
   }
 
   .flipflop-wrap img {
