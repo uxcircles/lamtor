@@ -823,6 +823,43 @@
     will-change: opacity;
   }
 
+  /* phase-2 spec copy: sits in the empty space left of the shoe, above
+     the black mask (9) and the frame sequence (20) but under the
+     wordmark/nav (30). every line starts invisible; JS fades each in at
+     its own p2 threshold. */
+  .transition-copy {
+    position: absolute;
+    left: 6vw;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    max-width: min(34vw, 420px);
+    color: var(--cream);
+    pointer-events: none;
+  }
+
+  .transition-copy .t-line {
+    opacity: 0;
+    font-size: clamp(15px, 1.5vw, 21px);
+    line-height: 1.7;
+    margin-bottom: 0.9em;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    will-change: opacity, transform;
+  }
+
+  /* the punchline pair is styled as a bone-dry spec sheet readout —
+     same visual language as the blueprint sizing markers in the
+     entrance scan */
+  .transition-copy .t-spec {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(12px, 1.1vw, 15px);
+    letter-spacing: 0.12em;
+    color: rgba(255, 237, 215, 0.75);
+    border-left: 2px solid rgba(255, 237, 215, 0.35);
+    padding-left: 12px;
+    margin-bottom: 0.55em;
+  }
+
   .shadow {
     position: absolute;
     left: 50%;
@@ -1164,6 +1201,16 @@
        browser can be asked to do; swapping an <img> src is comparatively
        free once the frames are preloaded. see the JS at the bottom. -->
   <img class="transition-video" id="transitionVideo" alt="">
+
+  <!-- deadpan spec copy revealed line by line while the image sequence
+       scrubs (phase 2) — the JS drives each line's opacity/offset off
+       p2, mirroring how the hero text left line by line in phase 1 -->
+  <div class="transition-copy" id="transitionCopy" aria-hidden="true">
+    <p class="t-line" data-start="0.2">LAMTOR-1 能辨識超過 12 種穿法。</p>
+    <p class="t-line" data-start="0.45">包括正穿、反穿，以及你阿嬤堅持的「左右腳互換」穿法。</p>
+    <p class="t-line t-spec" data-start="0.7">準確率：無從驗證。</p>
+    <p class="t-line t-spec" data-start="0.78">信心程度：極高。</p>
+  </div>
 
   <!-- lives outside .photo-frame on purpose: .photo-frame's blur filter
        rasterizes its whole subtree, and this needs to render crisp while
@@ -1623,6 +1670,11 @@
     const SHOE_T = 136 / FRAME_H, SHOE_B = 1776 / FRAME_H;
     let videoAligned = false;
 
+    // phase-2 copy lines, each with its own p2 reveal threshold parsed
+    // once from data-start instead of re-reading the attribute per frame
+    const copyLines = Array.from(document.querySelectorAll('.transition-copy .t-line'));
+    copyLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
+
     const FRAME_COUNT = 180;
     const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) =>
       `images/frame_${String(i + 1).padStart(5, '0')}.webp`
@@ -1777,6 +1829,16 @@
       // pure waste.
       if (p2 > 0 && !videoAligned) alignVideo(p1);
       video.style.opacity = String(clamp01(p2 / 0.15));
+
+      // spec copy: each line fades/rises in at its own data-start
+      // threshold of p2 — pure function of scroll, so scrolling back up
+      // plays the reveal in reverse for free
+      copyLines.forEach((line) => {
+        const local = clamp01((p2 - line._start) / 0.12);
+        line.style.opacity = String(local);
+        line.style.transform = `translateY(${(1 - local) * 14}px)`;
+      });
+
       const frame = Math.min(FRAME_COUNT - 1, Math.floor(p2 * FRAME_COUNT));
       if (frame !== currentFrame) {
         currentFrame = frame;
