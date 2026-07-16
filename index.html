@@ -1828,13 +1828,19 @@
       // changes — swapping to the same src every scroll tick would be
       // pure waste.
       if (p2 > 0 && !videoAligned) alignVideo(p1);
-      video.style.opacity = String(clamp01(p2 / 0.15));
+
+      // on a fast scroll the smoothed p1 lags behind p2, so the video's
+      // own black rectangle could pop in while the mask is still
+      // translucent, printing a dark box over the tabletop. gate
+      // everything phase-2 on the mask being essentially fully black.
+      const maskGate = clamp01((p1 - 0.85) / 0.15);
+      video.style.opacity = String(clamp01(p2 / 0.15) * maskGate);
 
       // spec copy: each line fades/rises in at its own data-start
       // threshold of p2 — pure function of scroll, so scrolling back up
       // plays the reveal in reverse for free
       copyLines.forEach((line) => {
-        const local = clamp01((p2 - line._start) / 0.12);
+        const local = clamp01((p2 - line._start) / 0.12) * maskGate;
         line.style.opacity = String(local);
         line.style.transform = `translateY(${(1 - local) * 14}px)`;
       });
@@ -1856,7 +1862,7 @@
     let exitStartX = 0, exitStartY = 0, exitStartR = 0;
     let rawP1 = 0, rawP2 = 0;
     let smoothP1 = 0, smoothP2 = 0;
-    const SMOOTH_LERP = 0.18; // higher = snappier catch-up, lower = more trailing
+    const SMOOTH_LERP = 0.24; // higher = snappier catch-up, lower = more trailing
     const SETTLE_EPS = 0.001;
     let transitionLoopRunning = false;
 
