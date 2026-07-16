@@ -26,6 +26,14 @@
     --text-start: calc(var(--p1-dur) * 0.75);       /* 1.395s */
     --text-span: 0.85s;   /* text-start -> last text element (.hint) landed */
     --props-start: calc(var(--text-start) + var(--text-span) * 0.75); /* ~2.03s */
+
+    /* scroll-driven exit transition (see the JS at the bottom): phase 1
+       is "everything fades to black except the flip-flop, LAMTOR
+       shrinks into a corner logo", phase 2 is "video scrubs by scroll
+       position". kept as CSS vars so the JS and the .scroll-track's
+       height calc() share one source of truth. */
+    --exit-p1-scroll: 1400px;
+    --exit-p2-scroll: 2000px;
   }
 
   * { box-sizing: border-box; }
@@ -34,14 +42,25 @@
     margin: 0;
     padding: 0;
     width: 100%;
-    height: 100%;
+    /* height:100% + overflow:hidden used to lock the page to exactly one
+       viewport (the hero was the whole site). now .scroll-track below is
+       deliberately taller than 100vh so the exit transition has scroll
+       distance to play out against, so this can't clip it anymore. */
     background: var(--cream);
-    overflow: hidden;
     font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
   }
 
-  .stage {
+  /* tall enough to hold both exit-transition phases' worth of scroll
+     distance, plus the one viewport that .stage itself occupies while
+     pinned via position:sticky below. */
+  .scroll-track {
     position: relative;
+    height: calc(100vh + var(--exit-p1-scroll) + var(--exit-p2-scroll));
+  }
+
+  .stage {
+    position: sticky;
+    top: 0;
     width: 100vw;
     height: 100vh;
     overflow: hidden;
@@ -177,7 +196,11 @@
     filter: blur(2px);
     opacity: 0;
     pointer-events: none;
-    z-index: 15;
+    /* stays above props (z-index up to ~7, "light plays across objects
+       too") but below .transition-mask (9) — otherwise the exit
+       transition's fade-to-black couldn't cover it and it would sit on
+       top of the black mask instead of disappearing with the table. */
+    z-index: 8;
     /* two animations: windShadow drifts it forever (transform), and
        windFadeIn (opacity, one-shot) brings it in on the same timing
        slot as .photo-frame-bg so the shadow only appears once the wood
@@ -219,7 +242,9 @@
     width: 34%;
     height: 10%;
     transform: rotate(-45deg);
-    z-index: 15;
+    /* see .light-wind's z-index comment — same reasoning, needs to sit
+       below .transition-mask (9) so the exit transition can cover it. */
+    z-index: 8;
     pointer-events: none;
     overflow: visible;
     /* same reasoning as .frame-overlay/.light-wind: this is meant to
@@ -251,6 +276,26 @@
     animation-delay: -2s; /* offset so the two streaks don't drift in lockstep */
   }
 
+  /* the exit transition (see the JS scroll handler) toggles this on
+     .body once scrolling starts. display:none — not just pausing the
+     animation — because mix-blend-mode layers force the browser to
+     recomposite against everything under them on every frame ANYTHING
+     nearby changes (like .transition-mask's opacity), regardless of
+     whether their own animation is running; only fully removing them
+     from the render tree actually eliminates that cost. safe to cut
+     abruptly since they're a subtle background texture, not something
+     a sudden disappearance draws attention to — especially while the
+     mask is also darkening the whole scene at the same moment. */
+  body.is-exiting .light-wind,
+  body.is-exiting .light-wind-streak {
+    display: none;
+  }
+
+  body.is-exiting .prop,
+  body.is-exiting .flipflop-wrap {
+    pointer-events: none;
+  }
+
   /* --- hero UI overlay: left-aligned
      logo dot + small tagline + big wordmark, top-right nav, a thin
      vertical model-name tab on the far right edge, a credit card
@@ -273,8 +318,20 @@
     position: absolute;
     top: 5vh;
     left: 6.5vw;
-    z-index: 20;
+    /* elevated above .transition-mask/.transition-video (z-index 9/20)
+       so it — specifically the wordmark, once it's shrunk into a corner
+       logo — stays visible through the whole exit transition. */
+    z-index: 30;
     pointer-events: none;
+    transform-origin: top left;
+    will-change: transform;
+  }
+
+  /* once the exit transition has shrunk the wordmark into a corner
+     logo, it becomes a real "back to top" control */
+  .hero-title-block.is-logo {
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   .hero-tagline {
@@ -355,7 +412,10 @@
     right: 6.5vw;
     display: flex;
     gap: 2.2vw;
-    z-index: 20;
+    /* stays above .transition-mask/.transition-video (9/20) — the exit
+       transition never touches this element's own opacity, it's meant
+       to persist the whole time. */
+    z-index: 30;
     pointer-events: none;
     animation: uiEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: calc(var(--text-start) + 0.05s);
@@ -386,6 +446,7 @@
     justify-content: center;
     animation: uiEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: calc(var(--text-start) + 0.1s);
+    will-change: opacity;
   }
 
   .side-tab span {
@@ -417,6 +478,18 @@
        lines inside it, which do their own cascading entrance below */
     animation: panelFade 0.3s ease-out backwards;
     animation-delay: calc(var(--text-start) + 0.1s);
+    will-change: opacity, transform;
+  }
+
+  /* backdrop-filter forces the browser to recompute the blur of
+     whatever's behind this card every single frame anything changes —
+     including the exit transition's mask/scale, which run every frame
+     while scrolling. it's costing real smoothness for a blur nobody can
+     see once the card's own opacity is dropping anyway, so the exit-
+     transition JS turns it off (this class) as soon as scrolling starts. */
+  .hero-card.no-blur {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
   .hero-card-line {
@@ -484,6 +557,7 @@
     text-shadow: 0 2px 8px rgba(0,0,0,0.4);
     z-index: 20;
     pointer-events: none;
+    will-change: opacity, transform;
   }
 
   /* the English lines set the mood first, then the short Chinese line
@@ -535,6 +609,7 @@
        position already depends on translateX(-50%) for centering */
     animation: uiEnterCentered 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: calc(var(--text-start) + 0.35s);
+    will-change: opacity;
   }
 
   /* the ring and the icon are separate elements (not parent/child) so
@@ -704,6 +779,48 @@
     width: 15%;
     aspect-ratio: 267 / 663;
     z-index: 10;
+    /* the exit transition's scroll-driven "grow slightly" scale is
+       applied here via JS (transform: scale(...)), not on .flipflop-wrap
+       — the hover-physics loop above already owns .flipflop-wrap's own
+       transform every frame, so scaling THIS wrapper instead avoids the
+       two fighting over the same property. */
+    transform-origin: center;
+    will-change: transform;
+  }
+
+  /* sits between the props (z-index up to ~7) and .stage-inner (10) —
+     as it fades to opaque black it covers the tabletop/props but not
+     the flip-flop, which stays above it throughout. opacity is driven
+     entirely by JS (scroll progress), not an animation, so it scrubs
+     smoothly in both scroll directions. */
+  .transition-mask {
+    position: absolute;
+    inset: 0;
+    z-index: 9;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  /* lives outside .photo-frame, as a sibling positioned over roughly the
+     same spot as the flip-flop (bigger, since it's meant to take over
+     the whole moment once the screen has gone black) — z-index above
+     .stage-inner (10) so it visually covers the shoe once it fades in.
+     an <img>, not a <video> — opacity + which frame is showing are both
+     driven by JS scroll progress (see the image-sequence swap at the
+     bottom of the file). */
+  .transition-video {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: min(70vw, 70vh);
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    object-fit: contain;
+    will-change: opacity;
   }
 
   .shadow {
@@ -988,6 +1105,7 @@
 </head>
 <body>
 
+<div class="scroll-track" id="scrollTrack">
 <div class="stage" id="stage">
   <div class="hero-title-block">
     <div class="wordmark"><span class="letter-clip"><span class="letter">L</span></span><span class="letter-clip"><span class="letter">A</span></span><span class="letter-clip"><span class="letter">M</span></span><span class="letter-clip"><span class="letter">T</span></span><span class="letter-clip"><span class="letter">O</span></span><span class="letter-clip"><span class="letter">R</span></span></div>
@@ -1030,6 +1148,8 @@
     <div class="prop prop-notebook" data-depth="0.35"><img src="assets/props/notebook-cutout.webp" alt=""></div>
     <div class="prop prop-photo"   data-depth="0.35"><img src="assets/props/old-photo-cutout.webp" alt=""></div>
 
+    <div class="transition-mask" id="transitionMask"></div>
+
     <div class="stage-inner">
       <div class="shadow" id="shadow"></div>
       <div class="flipflop-wrap" id="flipflop" data-depth="1">
@@ -1037,6 +1157,13 @@
       </div>
     </div>
   </div>
+
+  <!-- an image sequence (180 frames, images/frame_00001.webp..frame_00180.webp)
+       standing in for the video — scrubbing an actual <video>'s
+       currentTime every scroll frame was one of the janker things a
+       browser can be asked to do; swapping an <img> src is comparatively
+       free once the frames are preloaded. see the JS at the bottom. -->
+  <img class="transition-video" id="transitionVideo" alt="">
 
   <!-- lives outside .photo-frame on purpose: .photo-frame's blur filter
        rasterizes its whole subtree, and this needs to render crisp while
@@ -1142,6 +1269,7 @@
     </span>
     SCROLL TO CONTINUE
   </div>
+</div>
 </div>
 
 <div class="cursor-dot" id="cursorDot"></div>
@@ -1362,8 +1490,28 @@
 
   const flipflopLayer = layers.find(l => l.el.id === 'flipflop');
 
+  // this loop was running requestAnimationFrame forever, unconditionally,
+  // writing style.transform on all 9 props + the flip-flop (18 elements,
+  // wrapper+inner each) every single frame — including the entire time
+  // nothing was moving, e.g. right after the mouse leaves and the spring
+  // has long since settled. that's a permanent per-frame cost sitting
+  // underneath everything else on the page (including the exit-transition
+  // scroll handler), which is exactly why things felt janky even before
+  // scrolling. now it goes to sleep once every layer is close enough to
+  // its resting position/velocity, and wakes back up on mouse movement.
+  let loopRunning = true;
+  let interactionDisabled = false;
+  const REST_EPS = 0.05;
+
+  function wake() {
+    if (interactionDisabled || loopRunning) return;
+    loopRunning = true;
+    requestAnimationFrame(animate);
+  }
+
   document.addEventListener('mousemove', (e) => {
     cursorDot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%, -50%)`;
+    wake();
   });
 
   function springStep(layer) {
@@ -1385,6 +1533,17 @@
   }
 
   function animate() {
+    // scrolling force-disables this loop (see the exit-transition JS) —
+    // if a frame was already queued right as that happened, bail out
+    // immediately instead of doing a full pass of spring math + style
+    // writes for nothing.
+    if (interactionDisabled) {
+      loopRunning = false;
+      return;
+    }
+
+    let settled = true;
+
     for (const layer of layers) {
       springStep(layer);
 
@@ -1394,6 +1553,17 @@
       layer.el.style.transform = `translate(${layer.curX}px, ${layer.curY}px)`;
       const rotScale = layer.key === 'flipflop' ? 1 : 0.5;
       layer.innerEl.style.transform = `rotate(${layer.curR * rotScale}deg)`;
+
+      if (
+        Math.abs(layer.targetX - layer.curX) > REST_EPS ||
+        Math.abs(layer.targetY - layer.curY) > REST_EPS ||
+        Math.abs(layer.targetR - layer.curR) > REST_EPS ||
+        Math.abs(layer.velX || 0) > REST_EPS ||
+        Math.abs(layer.velY || 0) > REST_EPS ||
+        Math.abs(layer.velR || 0) > REST_EPS
+      ) {
+        settled = false;
+      }
     }
 
     // shadow follows the flip-flop's own dodge, opposite direction
@@ -1402,10 +1572,267 @@
     shadow.style.transform =
       `translate(calc(-50% + ${-fx * 0.4}px), ${-fy * 0.3}px)`;
 
+    if (settled) {
+      loopRunning = false;
+      return;
+    }
     requestAnimationFrame(animate);
   }
 
   animate();
+
+  // --- scroll-driven exit transition ---------------------------------
+  // phase 1 (0 -> --exit-p1-scroll px of scroll): the hero fades to
+  // black — a mask covers the tabletop/props, the card/desc copy
+  // disappears line by line, side-tab/hint/tagline do a plain fade —
+  // while the flip-flop stays fully visible and grows slightly, and
+  // LAMTOR shrinks into a small top-left "back to top" logo.
+  // phase 2 (the next --exit-p2-scroll px): the video fades in over the
+  // shoe and scrubs by scroll position — it never actually .play()s,
+  // it's just a film strip driven by currentTime. everything here is a
+  // pure function of scroll position, so scrolling back up reverses it
+  // exactly instead of needing separate "undo" logic.
+  (function () {
+    const mask = document.getElementById('transitionMask');
+    const stageInnerEl = document.querySelector('.stage-inner');
+    const titleBlock = document.querySelector('.hero-title-block');
+    const tagline = document.querySelector('.hero-tagline');
+    const cardPanel = document.querySelector('.hero-card');
+    const descPanel = document.querySelector('.hero-desc');
+    const sideTabEl = document.querySelector('.side-tab');
+    const hintEl = document.querySelector('.hint');
+    const video = document.getElementById('transitionVideo');
+
+    const cardLines = cardPanel.querySelectorAll('.line');
+    const descLines = descPanel.querySelectorAll('.line');
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const p1Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p1-scroll')) || 1400;
+    const p2Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p2-scroll')) || 2000;
+
+    // image sequence standing in for the video (see the <img> comment in
+    // the HTML for why) — frame_00001.webp .. frame_00180.webp, 30fps
+    // for a 6s clip. preloaded up front so swapping .src while scrolling
+    // never has to wait on a network request.
+    // where the shoe sits inside each 1080×1920 frame (measured from
+    // frame_00001's pixels against the black background) — used below to
+    // scale and place the sequence so its shoe lands exactly on top of
+    // the photo shoe instead of floating at an arbitrary 70vw/70vh size
+    const FRAME_W = 1080, FRAME_H = 1920;
+    const SHOE_L = 212 / FRAME_W, SHOE_R = 868 / FRAME_W;
+    const SHOE_T = 136 / FRAME_H, SHOE_B = 1776 / FRAME_H;
+    let videoAligned = false;
+
+    const FRAME_COUNT = 180;
+    const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) =>
+      `images/frame_${String(i + 1).padStart(5, '0')}.webp`
+    );
+    framePaths.forEach((src) => { new Image().src = src; });
+    let currentFrame = -1;
+
+    const clamp01 = (n) => Math.max(0, Math.min(1, n));
+
+    // container opacity does the actual fading (so text + its panel
+    // background disappear together, not separately); each line only
+    // gets a staggered translateY, which is what makes them read as
+    // peeling away one at a time instead of vanishing as a block.
+    // sizes and places the image sequence so the shoe inside the frames
+    // (SHOE_L/R/T/B) lands exactly on the photo shoe. measured rects are
+    // re-projected to the fully-zoomed p1 = 1 state (stage-inner scale
+    // 1.18, origin center) since this can run mid-transition, before the
+    // zoom has finished catching up.
+    function alignVideo(p1) {
+      const ffRect = document.querySelector('#flipflop img').getBoundingClientRect();
+      const innerRect = stageInnerEl.getBoundingClientRect();
+      const cx0 = innerRect.x + innerRect.width / 2;
+      const cy0 = innerRect.y + innerRect.height / 2;
+      const k = 1.18 / (1 + p1 * 0.18);
+      const shoeW = ffRect.width * k;
+      const shoeCx = cx0 + (ffRect.x + ffRect.width / 2 - cx0) * k;
+      const shoeCy = cy0 + (ffRect.y + ffRect.height / 2 - cy0) * k;
+      const elW = shoeW / (SHOE_R - SHOE_L);
+      const elH = elW * FRAME_H / FRAME_W;
+      video.style.width = elW + 'px';
+      video.style.left = (shoeCx - elW * (SHOE_L + SHOE_R) / 2) + 'px';
+      video.style.top = (shoeCy - elH * (SHOE_T + SHOE_B) / 2) + 'px';
+      video.style.transform = 'none';
+      videoAligned = true;
+    }
+    window.addEventListener('resize', () => { videoAligned = false; });
+
+    // dir: -1 slides left (for the left-side desc panel), +1 slides
+    // right (for the right-side card panel) — each panel exits toward
+    // whichever edge of the screen it's already sitting near, instead
+    // of just drifting up in place, so it reads as "being swept off"
+    // rather than a generic fade.
+    function staggerLines(lines, p1, startFrac, staggerFrac, dir) {
+      lines.forEach((line, i) => {
+        const start = startFrac + i * staggerFrac;
+        const local = clamp01((p1 - start) / 0.18);
+        line.style.transform = `translateX(${dir * local * 140}px)`;
+        line.style.opacity = String(1 - local);
+      });
+    }
+
+    // applies a given (p1, p2) progress pair to every element — doesn't
+    // read window.scrollY itself, so it can be driven either by the raw
+    // scroll position or by a smoothed value that trails behind it (see
+    // the lerp loop below).
+    function applyProgress(p1, p2) {
+      // everything below is being covered by the mask anyway once
+      // scrolling starts, so there's no reason to keep paying for prop
+      // hover-physics or the ambient dappled-light/shadow animations —
+      // this force-stops the physics loop (interactionDisabled also
+      // blocks wake() from restarting it mid-scroll) and pauses the
+      // infinite CSS animations via a class, only re-enabling both once
+      // scrolled back to the very top.
+      const exiting = p1 > 0;
+      if (exiting !== interactionDisabled) {
+        interactionDisabled = exiting;
+        document.body.classList.toggle('is-exiting', exiting);
+        if (exiting) {
+          loopRunning = false;
+          // freeze whatever tilt/offset the hover-physics loop left the
+          // shoe at, so it can be eased back to dead-center below instead
+          // of just staying crooked for the rest of the scroll
+          if (flipflopLayer) {
+            exitStartX = flipflopLayer.curX;
+            exitStartY = flipflopLayer.curY;
+            exitStartR = flipflopLayer.curR;
+          }
+        }
+      }
+
+      // ease the shoe's hover-tilt back to dead-center over the first
+      // third of phase 1, since the physics loop that normally does this
+      // is stopped for the whole exit
+      if (exiting && flipflopLayer) {
+        const correctLocal = clamp01(p1 / 0.35);
+        const cx = exitStartX * (1 - correctLocal);
+        const cy = exitStartY * (1 - correctLocal);
+        const cr = exitStartR * (1 - correctLocal);
+        flipflopLayer.curX = cx;
+        flipflopLayer.curY = cy;
+        flipflopLayer.curR = cr;
+        flipflopLayer.el.style.transform = `translate(${cx}px, ${cy}px)`;
+        flipflopLayer.innerEl.style.transform = `rotate(${cr}deg)`;
+        shadow.style.transform =
+          `translate(calc(-50% + ${-cx * 0.4}px), ${-cy * 0.3}px)`;
+      }
+
+      mask.style.opacity = String(p1);
+
+      // flip-flop: stays, grows slightly — scaling .stage-inner (not
+      // .flipflop-wrap) because the hover-physics loop above already
+      // owns .flipflop-wrap's own transform every frame
+      stageInnerEl.style.transform = `scale(${1 + p1 * 0.18})`;
+
+      // wordmark block: shrinks + nudges into its own top-left corner
+      // (transform-origin: top left, set in CSS) so it settles into a
+      // small persistent logo instead of drifting off-center
+      titleBlock.style.transform =
+        `translate(${-p1 * 8}px, ${-p1 * 8}px) scale(${1 - p1 * 0.88})`;
+      titleBlock.classList.toggle('is-logo', p1 > 0.85);
+
+      // tagline doesn't survive as part of the logo — only the wordmark
+      // does — so it gets its own plain fade, front-loaded into the
+      // first half of phase 1
+      const taglineLocal = clamp01(p1 / 0.45);
+      tagline.style.opacity = String(1 - taglineLocal);
+      tagline.style.transform = `translateY(${-taglineLocal * 10}px)`;
+
+      // card/desc: panel fade handles the actual disappearing, line
+      // stagger handles the "one at a time" motion on top of it. starts
+      // almost immediately (was 0.15) so the transition doesn't have a
+      // dead zone at the very start of scrolling before anything visibly
+      // reacts.
+      const panelLocal = clamp01(p1 / 0.7);
+      cardPanel.style.opacity = String(1 - panelLocal);
+      descPanel.style.opacity = String(1 - panelLocal);
+      cardPanel.style.transform = `translateX(${panelLocal * 110}px)`;
+      descPanel.style.transform = `translateX(${-panelLocal * 110}px)`;
+      staggerLines(cardLines, p1, 0.03, 0.08, 1);
+      staggerLines(descLines, p1, 0.03, 0.08, -1);
+
+      // side-tab, hint: plain fade, nothing to stagger. hint's resting
+      // opacity is 0.7 (not 1), so its target is scaled to match —
+      // otherwise it'd snap to fully opaque the instant this first runs.
+      const simpleLocal = clamp01(p1 / 0.5);
+      sideTabEl.style.opacity = String(1 - simpleLocal);
+      hintEl.style.opacity = String(0.7 * (1 - simpleLocal));
+
+      // backdrop-filter recomputes every frame anything behind it moves,
+      // so animating the actual blur radius down smoothly would cost
+      // exactly what disabling it was meant to save. instead it stays on
+      // until the panel is already most of the way faded (60%+), so the
+      // hard cutoff lands when there's barely any panel left to notice
+      // losing its blur — reads as "faded away" rather than "blur
+      // snapped off", without ever animating backdrop-filter itself.
+      cardPanel.classList.toggle('no-blur', panelLocal > 0.6);
+
+      // video: fades in fast at the very start of phase 2, then the
+      // image sequence advances by the rest of phase 2's scroll
+      // distance. only touch .src when the target frame actually
+      // changes — swapping to the same src every scroll tick would be
+      // pure waste.
+      if (p2 > 0 && !videoAligned) alignVideo(p1);
+      video.style.opacity = String(clamp01(p2 / 0.15));
+      const frame = Math.min(FRAME_COUNT - 1, Math.floor(p2 * FRAME_COUNT));
+      if (frame !== currentFrame) {
+        currentFrame = frame;
+        video.src = framePaths[frame];
+      }
+    }
+
+    // raw = directly from scroll position (can jump instantly on a fast
+    // scroll/trackpad flick); smooth = eases toward raw every frame
+    // instead of snapping to it. this is what makes a fast scroll still
+    // feel like the transition "plays through" rather than skipping
+    // straight to wherever the scroll landed — the visible progress
+    // trails the actual scroll position and catches up over a few
+    // frames, similar in spirit to the prop hover-physics lerp above.
+    let exitStartX = 0, exitStartY = 0, exitStartR = 0;
+    let rawP1 = 0, rawP2 = 0;
+    let smoothP1 = 0, smoothP2 = 0;
+    const SMOOTH_LERP = 0.18; // higher = snappier catch-up, lower = more trailing
+    const SETTLE_EPS = 0.001;
+    let transitionLoopRunning = false;
+
+    function transitionTick() {
+      rawP1 = clamp01(window.scrollY / p1Scroll);
+      rawP2 = clamp01((window.scrollY - p1Scroll) / p2Scroll);
+      smoothP1 += (rawP1 - smoothP1) * SMOOTH_LERP;
+      smoothP2 += (rawP2 - smoothP2) * SMOOTH_LERP;
+
+      applyProgress(smoothP1, smoothP2);
+
+      // idle once caught up (same "sleep instead of running forever"
+      // pattern as the prop physics loop) — only worth paying for this
+      // every frame while actually catching up to a moving target.
+      const settled =
+        Math.abs(rawP1 - smoothP1) < SETTLE_EPS &&
+        Math.abs(rawP2 - smoothP2) < SETTLE_EPS;
+      if (settled) {
+        transitionLoopRunning = false;
+        return;
+      }
+      requestAnimationFrame(transitionTick);
+    }
+
+    function wakeTransition() {
+      if (transitionLoopRunning) return;
+      transitionLoopRunning = true;
+      requestAnimationFrame(transitionTick);
+    }
+
+    window.addEventListener('scroll', wakeTransition, { passive: true });
+    applyProgress(0, 0);
+
+    titleBlock.addEventListener('click', () => {
+      if (!titleBlock.classList.contains('is-logo')) return;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
 </script>
 
 </body>
