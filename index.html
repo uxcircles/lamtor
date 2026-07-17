@@ -34,6 +34,9 @@
        height calc() share one source of truth. */
     --exit-p1-scroll: 1400px;
     --exit-p2-scroll: 2000px;
+    /* dwell after the video/spec-copy beat completes: scroll distance
+       where the finished scene just holds before phase 3 takes over */
+    --exit-p2-hold: 300px;
     --exit-p3-scroll: 2600px;
   }
 
@@ -56,7 +59,7 @@
      pinned via position:sticky below. */
   .scroll-track {
     position: relative;
-    height: calc(100vh + var(--exit-p1-scroll) + var(--exit-p2-scroll) + var(--exit-p3-scroll));
+    height: calc(100vh + var(--exit-p1-scroll) + var(--exit-p2-scroll) + var(--exit-p2-hold) + var(--exit-p3-scroll));
   }
 
   .stage {
@@ -903,16 +906,17 @@
     will-change: opacity;
   }
 
-  /* the cutout shoe that replaces the video's shoe — JS pins it to the
-     exact rect the video shoe occupies, so the crossfade reads as the
-     same object changing context rather than two images swapping */
-  .flipflop2 {
+  /* the hand-held shoe that takes over directly from the video's shoe
+     as phase 3 opens — JS pins it so its shoe overlaps the video shoe's
+     rect exactly, then scales it down around the shoe's own center
+     (transform-origin set by JS) as a "presenting it to you" gesture */
+  .flipflop-hand {
     position: absolute;
-    z-index: 21;
+    z-index: 22;
     opacity: 0;
     pointer-events: none;
-    filter: drop-shadow(0 18px 30px rgba(0,0,0,0.45));
-    will-change: opacity;
+    filter: drop-shadow(0 14px 26px rgba(0,0,0,0.4));
+    will-change: opacity, transform;
   }
 
   /* phase-3 "Powered by AI" section: mirrors the phase-2 copy but on
@@ -1009,6 +1013,16 @@
     filter: blur(4px);
     transition: transform 0.05s linear, opacity 0.2s ease;
     pointer-events: none;
+    /* reveal in step with .flipflop-wrap's photoRevealFade — without
+       this the contact shadow floats alone over the blueprint scan as
+       a stray dark blob before the shoe photo exists */
+    animation: shadowReveal 0.35s ease-out backwards;
+    animation-delay: 1.31s;
+  }
+
+  @keyframes shadowReveal {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
 
   /* same wrapper/inner split as .prop, sized to fill .stage-inner exactly */
@@ -1358,7 +1372,7 @@
   <img class="balcony-bg" id="balconyBg" src="assets/props/balcony.webp" alt="">
   <img class="balcony-bg arcade-bg" id="arcadeBg" src="assets/props/arcade.webp" alt="">
   <div class="balcony-shade" id="balconyShade"></div>
-  <img class="flipflop2" id="flipflop2" src="assets/props/flipflop2-cutout.webp" alt="">
+  <img class="flipflop-hand" id="flipflopHand" src="assets/props/flipflop-hand.webp" alt="">
 
   <!-- phase-3 "Powered by AI" section — fades in on the right while the
        phase-2 copy sweeps out left and the frame sequence rests on its
@@ -1823,6 +1837,7 @@
     const rootStyles = getComputedStyle(document.documentElement);
     const p1Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p1-scroll')) || 1400;
     const p2Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p2-scroll')) || 2000;
+    const p2Hold = parseFloat(rootStyles.getPropertyValue('--exit-p2-hold')) || 0;
     const p3Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p3-scroll')) || 1600;
 
     // image sequence standing in for the video (see the <img> comment in
@@ -1845,10 +1860,32 @@
     const copyBlock = document.getElementById('transitionCopy');
     const poweredLines = Array.from(document.querySelectorAll('.powered-copy .p-line'));
     poweredLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
+    // shoe placement inside flipflop-hand.webp (530×1404), measured by
+    // color-segmenting the shoe from the hand: vertical span is clean
+    // (toe 0.0028 → sole bottom 0.7137); horizontal alignment uses the
+    // sole's center line (≈0.594) since the shadowed left strap edge
+    // can't be measured reliably
+    const HAND_W = 530, HAND_H = 1404;
+    const HAND_SHOE_T = 0.0028, HAND_SHOE_B = 0.7137, HAND_SHOE_CX = 0.594;
+    // eyeballed correction: the measured bbox ran a touch long, which
+    // made the hand's shoe render slightly larger than the cutout's
+    const HAND_FIT = 0.98;
+    // lift the whole hand image slightly relative to the cutout shoe —
+    // stored as a fraction of the hand element's height so it scales
+    // with the viewport (0.011 ≈ 10px at a ~1500px-wide window)
+    const HAND_LIFT = 0.008;
+    // nudge the hand image right, as a fraction of the hand element's
+    // width (0.015 ≈ 5px at a ~1500px-wide window)
+    const HAND_NUDGE_X = 0.015;
+
     const balconyBg = document.getElementById('balconyBg');
     const arcadeBg = document.getElementById('arcadeBg');
     const balconyShade = document.getElementById('balconyShade');
-    const flipflop2 = document.getElementById('flipflop2');
+    const flipflopHand = document.getElementById('flipflopHand');
+    // pre-decode while idle: an opacity-0 img may not be decoded until
+    // it first becomes visible, and paying that cost mid-transition
+    // shows up as a one-frame hitch right as the hand appears
+    if (flipflopHand.decode) flipflopHand.decode().catch(() => {});
     const warningLines = Array.from(document.querySelectorAll('.warning-copy .w-line'));
     warningLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
 
@@ -1886,13 +1923,22 @@
       video.style.top = (shoeCy - elH * (SHOE_T + SHOE_B) / 2) + 'px';
       video.style.transform = 'none';
 
-      // pin the phase-3 cutout to the video shoe's exact rect (the
-      // cutout IS just the shoe, so its box equals the shoe bbox) —
-      // the crossfade then reads as the same shoe changing context
       const shoeH = elH * (SHOE_B - SHOE_T);
-      flipflop2.style.width = shoeW + 'px';
-      flipflop2.style.left = (shoeCx - shoeW / 2) + 'px';
-      flipflop2.style.top = (shoeCy - shoeH / 2) + 'px';
+
+      // hand-held shoe: sized so ITS shoe matches the video shoe by
+      // HEIGHT (the clean measurement), horizontally centered on the
+      // sole's center line. transform-origin lands on the shoe's center
+      // so the later "presenting" shrink pivots around the shoe, not
+      // around the hand or the element box.
+      const handElH = shoeH / (HAND_SHOE_B - HAND_SHOE_T) * HAND_FIT;
+      const handElW = handElH * HAND_W / HAND_H;
+      const handLeft = shoeCx - handElW * (HAND_SHOE_CX - HAND_NUDGE_X);
+      const handTop = shoeCy - handElH * ((HAND_SHOE_T + HAND_SHOE_B) / 2 + HAND_LIFT);
+      flipflopHand.style.width = handElW + 'px';
+      flipflopHand.style.left = handLeft + 'px';
+      flipflopHand.style.top = handTop + 'px';
+      flipflopHand.style.transformOrigin =
+        `${HAND_SHOE_CX * 100}% ${((HAND_SHOE_T + HAND_SHOE_B) / 2) * 100}%`;
 
       videoAligned = true;
     }
@@ -2021,23 +2067,37 @@
       // everything phase-2 on the mask being essentially fully black.
       const maskGate = clamp01((p1 - 0.85) / 0.15);
 
-      // phase-3 scene swap, in two beats: first the cutout replaces the
-      // video shoe while the backdrop is still pure black — the video's
-      // own black rectangle just melts into the mask, invisible. only
-      // after the video is fully gone does the balcony fade up. doing
-      // both at once left the video's half-faded black box hanging as a
-      // dark band over the lit balcony.
-      const swap = clamp01(p3 / 0.18) * maskGate;
+      // phase-3 scene swap, in two beats: first the hand-held shoe
+      // replaces the video shoe while the backdrop is still pure black
+      // (the video's own black rectangle just melts into the mask,
+      // invisible), timed with the phase-2 copy's fade-out. only after
+      // the video is fully gone does the balcony fade up — doing both
+      // at once left the video's half-faded black box hanging as a dark
+      // band over the lit balcony.
+      // hand first fades in ON TOP of the still-opaque video shoe (it
+      // covers the shoe completely, so nothing shows through), and only
+      // then does the video drop away underneath — a straight 50/50
+      // cross-dissolve left a beat where both layers were translucent
+      // and the shoe turned to mush. smoothstep instead of linear so
+      // the fade doesn't start/stop with a mechanical snap.
+      const ease = (t) => t * t * (3 - 2 * t);
+      const swap = ease(clamp01(p3 / 0.16)) * maskGate;
+      const videoOut = ease(clamp01((p3 - 0.12) / 0.1)) * maskGate;
       const bgIn = clamp01((p3 - 0.18) / 0.24) * maskGate;
-      video.style.opacity = String(clamp01(p2 / 0.15) * maskGate * (1 - swap));
-      flipflop2.style.opacity = String(swap);
+      const videoIn = clamp01(p2 / 0.15) * maskGate;
+      video.style.opacity = String(videoIn * (1 - videoOut));
+      // fade the photo shoe out in lockstep with the frame sequence
+      // fading in — leaving it visible underneath let it peek out
+      // around the frames' shoe as a ghost once the poses diverged
+      stageInnerEl.style.opacity = String(1 - videoIn);
       balconyBg.style.opacity = String(bgIn);
       balconyShade.style.opacity = String(bgIn);
-      // the photo shoe sits ABOVE the mask (z 10 vs 9) by design, so a
-      // half-faded balcony (z 12) would show it ghosting through from
-      // underneath — fade the whole photo layer out as the balcony
-      // comes up; the cutout has fully replaced it by then anyway
-      stageInnerEl.style.opacity = String(1 - bgIn);
+
+      // Powered-by-barefoot beat: the hand then eases smaller around
+      // the shoe's center like the shoe is being held up and presented
+      const present = clamp01((p3 - 0.6) / 0.2);
+      flipflopHand.style.opacity = String(swap);
+      flipflopHand.style.transform = `scale(${1 - present * 0.18})`;
 
       // final beat: the backdrop steps out of the balcony and into the
       // arcade street as the warning label types itself in on the right.
@@ -2100,7 +2160,7 @@
     function transitionTick() {
       rawP1 = clamp01(window.scrollY / p1Scroll);
       rawP2 = clamp01((window.scrollY - p1Scroll) / p2Scroll);
-      rawP3 = clamp01((window.scrollY - p1Scroll - p2Scroll) / p3Scroll);
+      rawP3 = clamp01((window.scrollY - p1Scroll - p2Scroll - p2Hold) / p3Scroll);
       smoothP1 += (rawP1 - smoothP1) * SMOOTH_LERP;
       smoothP2 += (rawP2 - smoothP2) * SMOOTH_LERP;
       smoothP3 += (rawP3 - smoothP3) * SMOOTH_LERP;
@@ -2126,6 +2186,13 @@
       transitionLoopRunning = true;
       requestAnimationFrame(transitionTick);
     }
+
+    // always start from the top on load — the entrance animation and
+    // the scroll-driven exit assume a fresh start, so the browser's
+    // default "restore scroll position on refresh" would drop you into
+    // a half-finished transition state
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    window.scrollTo(0, 0);
 
     window.addEventListener('scroll', wakeTransition, { passive: true });
     applyProgress(0, 0, 0);
