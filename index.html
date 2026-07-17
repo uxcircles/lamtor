@@ -34,6 +34,7 @@
        height calc() share one source of truth. */
     --exit-p1-scroll: 1400px;
     --exit-p2-scroll: 2000px;
+    --exit-p3-scroll: 2600px;
   }
 
   * { box-sizing: border-box; }
@@ -55,7 +56,7 @@
      pinned via position:sticky below. */
   .scroll-track {
     position: relative;
-    height: calc(100vh + var(--exit-p1-scroll) + var(--exit-p2-scroll));
+    height: calc(100vh + var(--exit-p1-scroll) + var(--exit-p2-scroll) + var(--exit-p3-scroll));
   }
 
   .stage {
@@ -847,6 +848,22 @@
     will-change: opacity, transform;
   }
 
+  /* first line reads as the claim, everything after as the fine print —
+     without a size jump the four lines were all the same "weight" and
+     the block read like a paragraph instead of a pitch */
+  .transition-copy .t-line:first-child {
+    font-size: clamp(24px, 2.6vw, 40px);
+    font-weight: 700;
+    line-height: 1.35;
+    letter-spacing: 0.02em;
+    margin-bottom: 0.7em;
+  }
+
+  .transition-copy .t-line:nth-child(2) {
+    color: rgba(255, 237, 215, 0.82);
+    margin-bottom: 1.4em;
+  }
+
   /* the punchline pair is styled as a bone-dry spec sheet readout —
      same visual language as the blueprint sizing markers in the
      entrance scan */
@@ -858,6 +875,127 @@
     border-left: 2px solid rgba(255, 237, 215, 0.35);
     padding-left: 12px;
     margin-bottom: 0.55em;
+  }
+
+  /* phase-3 backdrop: balcony photo under a right-weighted scrim.
+     sits above the black mask (9) but below the frame sequence (20),
+     so the video appears to dissolve into the balcony as their
+     opacities cross. */
+  .balcony-bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 12;
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  .balcony-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 13;
+    background: linear-gradient(90deg, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.38) 50%, rgba(0,0,0,0.62) 100%);
+    opacity: 0;
+    pointer-events: none;
+    will-change: opacity;
+  }
+
+  /* the cutout shoe that replaces the video's shoe — JS pins it to the
+     exact rect the video shoe occupies, so the crossfade reads as the
+     same object changing context rather than two images swapping */
+  .flipflop2 {
+    position: absolute;
+    z-index: 21;
+    opacity: 0;
+    pointer-events: none;
+    filter: drop-shadow(0 18px 30px rgba(0,0,0,0.45));
+    will-change: opacity;
+  }
+
+  /* phase-3 "Powered by AI" section: mirrors the phase-2 copy but on
+     the right side of the shoe, so the two text blocks alternate around
+     the centered flip-flop as you keep scrolling. same z-band as the
+     phase-2 copy (above mask/video, below wordmark/nav). */
+  /* both phase-3 text blocks hang from the same bottom anchor, so the
+     warning label's last line sits flush with 「絕對信任」's baseline
+     no matter how tall either block renders */
+  .powered-copy {
+    position: absolute;
+    left: 7vw;
+    bottom: 24vh;
+    z-index: 25;
+    width: min(36vw, 460px);
+    color: var(--cream);
+    pointer-events: none;
+  }
+
+  .powered-copy .p-line {
+    opacity: 0;
+    font-size: clamp(14px, 1.25vw, 17px);
+    line-height: 1.9;
+    margin-bottom: 1em;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    will-change: opacity, transform;
+  }
+
+  .powered-copy .p-overline {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(10px, 0.85vw, 12px);
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255, 237, 215, 0.55);
+    border-left: 2px solid rgba(255, 237, 215, 0.35);
+    padding-left: 12px;
+    margin-bottom: 2.2em;
+  }
+
+  .powered-copy .p-headline {
+    font-size: clamp(23px, 2.2vw, 34px);
+    font-weight: 700;
+    line-height: 1.6;
+    letter-spacing: 0.03em;
+    margin-bottom: 1.3em;
+  }
+
+  .powered-copy .p-body {
+    color: rgba(255, 237, 215, 0.7);
+    letter-spacing: 0.05em;
+    margin-bottom: 0.6em;
+  }
+
+  /* the warning label: deadpan product-caution formatting — mono, small,
+     hazard-bar on the left, first line a notch brighter. the joke does
+     the comedy; the typography plays it completely straight. */
+  .warning-copy {
+    position: absolute;
+    right: 7vw;
+    bottom: 24vh;
+    z-index: 25;
+    width: min(30vw, 400px);
+    pointer-events: none;
+  }
+
+  .warning-copy .w-line {
+    opacity: 0;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: clamp(12px, 1.05vw, 15px);
+    /* lines 2-3 are one continuous sentence — tight leading and no
+       inter-line margin keep them reading as a single paragraph
+       instead of three detached bullet items */
+    line-height: 1.7;
+    letter-spacing: 0.08em;
+    color: rgba(255, 237, 215, 0.68);
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    margin-bottom: 0.1em;
+    will-change: opacity, transform;
+  }
+
+  .warning-copy .w-head {
+    color: rgba(255, 237, 215, 0.95);
+    margin-bottom: 0.8em;
   }
 
   .shadow {
@@ -1210,6 +1348,35 @@
     <p class="t-line" data-start="0.45">包括正穿、反穿，以及你阿嬤堅持的「左右腳互換」穿法。</p>
     <p class="t-line t-spec" data-start="0.7">準確率：無從驗證。</p>
     <p class="t-line t-spec" data-start="0.78">信心程度：極高。</p>
+  </div>
+
+  <!-- phase-3 scene swap: the balcony photo crossfades in behind a
+       right-weighted dark scrim (so the copy stays readable over it),
+       the frame sequence fades away, and the cutout shoe takes its
+       place at the exact same spot — JS in alignVideo() keeps the
+       cutout pinned to the video shoe's rect. -->
+  <img class="balcony-bg" id="balconyBg" src="assets/props/balcony.webp" alt="">
+  <img class="balcony-bg arcade-bg" id="arcadeBg" src="assets/props/arcade.webp" alt="">
+  <div class="balcony-shade" id="balconyShade"></div>
+  <img class="flipflop2" id="flipflop2" src="assets/props/flipflop2-cutout.webp" alt="">
+
+  <!-- phase-3 "Powered by AI" section — fades in on the right while the
+       phase-2 copy sweeps out left and the frame sequence rests on its
+       final landed pose. line thresholds are p3 progress. -->
+  <div class="powered-copy" id="poweredCopy" aria-hidden="true">
+    <p class="p-line p-overline" data-start="0.3">Powered by barefoot</p>
+    <p class="p-line p-headline" data-start="0.38">搭載 LAMTOR-1，一個開源、免授權、在騎樓與陽台上完成訓練的基礎模型。</p>
+    <p class="p-line p-body" data-start="0.5">沒有雲端依賴。沒有訂閱制。</p>
+    <p class="p-line p-body" data-start="0.56">只有一雙拖鞋，和它對地板的絕對信任。</p>
+  </div>
+
+  <!-- second phase-3 beat: a bone-dry product-warning label on the
+       right while the backdrop walks out of the balcony and into the
+       arcade street — the copy and the scene leave the house together -->
+  <div class="warning-copy" id="warningCopy" aria-hidden="true">
+    <p class="w-line w-head" data-start="0.72">警告：LAMTOR-1 具高度穿戴便利性。</p>
+    <p class="w-line" data-start="0.78">使用者可能在下樓倒垃圾、去巷口買飲料、</p>
+    <p class="w-line" data-start="0.84">甚至到超商繳費時，完全忘記自己還穿著它。</p>
   </div>
 
   <!-- lives outside .photo-frame on purpose: .photo-frame's blur filter
@@ -1656,6 +1823,7 @@
     const rootStyles = getComputedStyle(document.documentElement);
     const p1Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p1-scroll')) || 1400;
     const p2Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p2-scroll')) || 2000;
+    const p3Scroll = parseFloat(rootStyles.getPropertyValue('--exit-p3-scroll')) || 1600;
 
     // image sequence standing in for the video (see the <img> comment in
     // the HTML for why) — frame_00001.webp .. frame_00180.webp, 30fps
@@ -1674,6 +1842,15 @@
     // once from data-start instead of re-reading the attribute per frame
     const copyLines = Array.from(document.querySelectorAll('.transition-copy .t-line'));
     copyLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
+    const copyBlock = document.getElementById('transitionCopy');
+    const poweredLines = Array.from(document.querySelectorAll('.powered-copy .p-line'));
+    poweredLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
+    const balconyBg = document.getElementById('balconyBg');
+    const arcadeBg = document.getElementById('arcadeBg');
+    const balconyShade = document.getElementById('balconyShade');
+    const flipflop2 = document.getElementById('flipflop2');
+    const warningLines = Array.from(document.querySelectorAll('.warning-copy .w-line'));
+    warningLines.forEach((line) => { line._start = parseFloat(line.dataset.start); });
 
     const FRAME_COUNT = 180;
     const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) =>
@@ -1708,6 +1885,15 @@
       video.style.left = (shoeCx - elW * (SHOE_L + SHOE_R) / 2) + 'px';
       video.style.top = (shoeCy - elH * (SHOE_T + SHOE_B) / 2) + 'px';
       video.style.transform = 'none';
+
+      // pin the phase-3 cutout to the video shoe's exact rect (the
+      // cutout IS just the shoe, so its box equals the shoe bbox) —
+      // the crossfade then reads as the same shoe changing context
+      const shoeH = elH * (SHOE_B - SHOE_T);
+      flipflop2.style.width = shoeW + 'px';
+      flipflop2.style.left = (shoeCx - shoeW / 2) + 'px';
+      flipflop2.style.top = (shoeCy - shoeH / 2) + 'px';
+
       videoAligned = true;
     }
     window.addEventListener('resize', () => { videoAligned = false; });
@@ -1730,7 +1916,7 @@
     // read window.scrollY itself, so it can be driven either by the raw
     // scroll position or by a smoothed value that trails behind it (see
     // the lerp loop below).
-    function applyProgress(p1, p2) {
+    function applyProgress(p1, p2, p3) {
       // everything below is being covered by the mask anyway once
       // scrolling starts, so there's no reason to keep paying for prop
       // hover-physics or the ambient dappled-light/shadow animations —
@@ -1834,7 +2020,37 @@
       // translucent, printing a dark box over the tabletop. gate
       // everything phase-2 on the mask being essentially fully black.
       const maskGate = clamp01((p1 - 0.85) / 0.15);
-      video.style.opacity = String(clamp01(p2 / 0.15) * maskGate);
+
+      // phase-3 scene swap, in two beats: first the cutout replaces the
+      // video shoe while the backdrop is still pure black — the video's
+      // own black rectangle just melts into the mask, invisible. only
+      // after the video is fully gone does the balcony fade up. doing
+      // both at once left the video's half-faded black box hanging as a
+      // dark band over the lit balcony.
+      const swap = clamp01(p3 / 0.18) * maskGate;
+      const bgIn = clamp01((p3 - 0.18) / 0.24) * maskGate;
+      video.style.opacity = String(clamp01(p2 / 0.15) * maskGate * (1 - swap));
+      flipflop2.style.opacity = String(swap);
+      balconyBg.style.opacity = String(bgIn);
+      balconyShade.style.opacity = String(bgIn);
+      // the photo shoe sits ABOVE the mask (z 10 vs 9) by design, so a
+      // half-faded balcony (z 12) would show it ghosting through from
+      // underneath — fade the whole photo layer out as the balcony
+      // comes up; the cutout has fully replaced it by then anyway
+      stageInnerEl.style.opacity = String(1 - bgIn);
+
+      // final beat: the backdrop steps out of the balcony and into the
+      // arcade street as the warning label types itself in on the right.
+      // the arcade paints on top of the balcony (same z, later in DOM),
+      // so this is an opaque-over-opaque crossfade — no black showing
+      // through mid-fade.
+      const arcadeIn = clamp01((p3 - 0.62) / 0.22) * maskGate;
+      arcadeBg.style.opacity = String(arcadeIn * bgIn);
+      warningLines.forEach((line) => {
+        const local = clamp01((p3 - line._start) / 0.1) * maskGate;
+        line.style.opacity = String(local);
+        line.style.transform = `translateX(${(1 - local) * 20}px)`;
+      });
 
       // spec copy: each line fades/rises in at its own data-start
       // threshold of p2 — pure function of scroll, so scrolling back up
@@ -1843,6 +2059,21 @@
         const local = clamp01((p2 - line._start) / 0.12) * maskGate;
         line.style.opacity = String(local);
         line.style.transform = `translateY(${(1 - local) * 14}px)`;
+      });
+
+      // phase 3: the phase-2 block sweeps out left (same exit language
+      // as the hero desc panel) while the Powered-by-AI copy rises in on
+      // the right. the frame sequence needs no handling here — p2 is
+      // already clamped at 1, so it just rests on the landed pose.
+      const copyOut = clamp01(p3 / 0.3);
+      copyBlock.style.opacity = String(1 - copyOut);
+      copyBlock.style.transform =
+        `translateY(-50%) translateX(${-copyOut * 80}px)`;
+
+      poweredLines.forEach((line) => {
+        const local = clamp01((p3 - line._start) / 0.14) * maskGate;
+        line.style.opacity = String(local);
+        line.style.transform = `translateX(${-(1 - local) * 28}px)`;
       });
 
       const frame = Math.min(FRAME_COUNT - 1, Math.floor(p2 * FRAME_COUNT));
@@ -1860,8 +2091,8 @@
     // trails the actual scroll position and catches up over a few
     // frames, similar in spirit to the prop hover-physics lerp above.
     let exitStartX = 0, exitStartY = 0, exitStartR = 0;
-    let rawP1 = 0, rawP2 = 0;
-    let smoothP1 = 0, smoothP2 = 0;
+    let rawP1 = 0, rawP2 = 0, rawP3 = 0;
+    let smoothP1 = 0, smoothP2 = 0, smoothP3 = 0;
     const SMOOTH_LERP = 0.24; // higher = snappier catch-up, lower = more trailing
     const SETTLE_EPS = 0.001;
     let transitionLoopRunning = false;
@@ -1869,17 +2100,20 @@
     function transitionTick() {
       rawP1 = clamp01(window.scrollY / p1Scroll);
       rawP2 = clamp01((window.scrollY - p1Scroll) / p2Scroll);
+      rawP3 = clamp01((window.scrollY - p1Scroll - p2Scroll) / p3Scroll);
       smoothP1 += (rawP1 - smoothP1) * SMOOTH_LERP;
       smoothP2 += (rawP2 - smoothP2) * SMOOTH_LERP;
+      smoothP3 += (rawP3 - smoothP3) * SMOOTH_LERP;
 
-      applyProgress(smoothP1, smoothP2);
+      applyProgress(smoothP1, smoothP2, smoothP3);
 
       // idle once caught up (same "sleep instead of running forever"
       // pattern as the prop physics loop) — only worth paying for this
       // every frame while actually catching up to a moving target.
       const settled =
         Math.abs(rawP1 - smoothP1) < SETTLE_EPS &&
-        Math.abs(rawP2 - smoothP2) < SETTLE_EPS;
+        Math.abs(rawP2 - smoothP2) < SETTLE_EPS &&
+        Math.abs(rawP3 - smoothP3) < SETTLE_EPS;
       if (settled) {
         transitionLoopRunning = false;
         return;
@@ -1894,7 +2128,7 @@
     }
 
     window.addEventListener('scroll', wakeTransition, { passive: true });
-    applyProgress(0, 0);
+    applyProgress(0, 0, 0);
 
     titleBlock.addEventListener('click', () => {
       if (!titleBlock.classList.contains('is-logo')) return;
