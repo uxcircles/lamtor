@@ -319,13 +319,23 @@
   }
 
   .hero-title-block {
-    position: absolute;
+    /* fixed (not absolute-within-sticky-.stage) so it — and the nav
+       below — stay pinned to the viewport for the ENTIRE page, not
+       just while .scroll-track is still in view. .stage has no
+       transform/filter/will-change of its own, so this correctly
+       anchors to the viewport rather than some ancestor. at scroll
+       position 0 this renders identically to the old absolute+sticky
+       setup, so the whole entrance/exit choreography is unaffected. */
+    position: fixed;
     top: 5vh;
     left: 6.5vw;
     /* elevated above .transition-mask/.transition-video (z-index 9/20)
-       so it — specifically the wordmark, once it's shrunk into a corner
-       logo — stays visible through the whole exit transition. */
-    z-index: 30;
+       AND above .product-float-bar (22) so the nav never gets buried
+       under the floating buy strip once both are visible at once —
+       given a clear round number well past anything else on the page,
+       rather than nudging it up alongside whatever the next thing
+       turns out to be. */
+    z-index: 50;
     pointer-events: none;
     transform-origin: top left;
     will-change: transform;
@@ -411,15 +421,15 @@
   }
 
   .hero-nav {
-    position: absolute;
+    position: fixed;
     top: 4vh;
     right: 6.5vw;
     display: flex;
     gap: 2.2vw;
-    /* stays above .transition-mask/.transition-video (9/20) — the exit
-       transition never touches this element's own opacity, it's meant
-       to persist the whole time. */
-    z-index: 30;
+    /* stays above .transition-mask/.transition-video (9/20) and above
+       .product-float-bar (22) — the exit transition never touches this
+       element's own opacity, it's meant to persist the whole time. */
+    z-index: 50;
     pointer-events: none;
     animation: uiEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) backwards;
     animation-delay: calc(var(--text-start) + 0.05s);
@@ -433,6 +443,36 @@
     opacity: 0.85;
     text-shadow: 0 2px 8px rgba(0,0,0,0.4);
     white-space: nowrap;
+    transition: color 0.25s ease, text-shadow 0.25s ease;
+  }
+
+  /* once the fixed nav/wordmark scroll over a light-background section
+     (product grid, stat/grip feature sections — see the data-nav-theme
+     scrollspy in the JS at the bottom), cream-on-nothing stops being
+     readable, so swap to ink and drop the shadow that was only ever
+     there to fight a busy photo background */
+  body[data-nav-theme="light"] .hero-nav span,
+  body[data-nav-theme="light"] .wordmark,
+  body[data-nav-theme="light"] .hero-tagline {
+    color: var(--ink);
+    text-shadow: none;
+  }
+
+  /* .product-float-bar's own backing is always the same light gray
+     regardless of which section happens to be scrolled underneath it,
+     so once it's showing, nav needs to match ITS background rather
+     than whatever data-nav-theme the page section below would imply —
+     otherwise cream text (correct for a dark section further down)
+     goes nearly unreadable sitting on the bar's light backdrop. */
+  body:has(.product-float-bar.is-visible) .hero-nav span,
+  body:has(.product-float-bar.is-visible) .wordmark,
+  body:has(.product-float-bar.is-visible) .hero-tagline {
+    color: var(--ink);
+    text-shadow: none;
+  }
+
+  .wordmark, .hero-tagline {
+    transition: color 0.25s ease, text-shadow 0.25s ease;
   }
 
   .side-tab {
@@ -1290,23 +1330,1189 @@
     z-index: 30;
     transition: transform 0.05s linear;
   }
+
+  /* ============ product lineup — normal scroll content ============
+     everything above this point is scroll-jacked inside .scroll-track;
+     this section sits in normal document flow right after it, on
+     purpose — the tonal joke is that the cinematic hero suddenly gives
+     way to a completely straight-faced corporate product-comparison
+     page, iPhone-compare-page style, three columns each with its own
+     color switcher. */
+  .product-section {
+    background: #f5f5f7;
+    color: var(--ink);
+    padding: 120px 6vw 100px;
+  }
+
+  .product-section-head {
+    text-align: center;
+    max-width: 640px;
+    margin: 0 auto 72px;
+  }
+
+  .product-section-eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 14px;
+  }
+
+  .product-section-title {
+    font-size: clamp(28px, 3.4vw, 44px);
+    font-weight: 800;
+    line-height: 1.3;
+    margin: 0;
+  }
+
+  .product-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    /* insets the 3-card group 90px on each side — the box itself is
+       still the same centered 1200px zone (so this doesn't relocate
+       the group), but it hands .compare-row's label a reliable 90px
+       of matching space to sit in below, instead of hoping leftover
+       viewport width happens to be enough. */
+    padding: 0 90px;
+  }
+
+  /* matches .compare-row's own 860px breakpoint — this got dropped
+     somewhere during the subgrid experiments earlier and left mobile
+     forcing 3 columns + the 90px desktop-alignment padding into a
+     viewport that can't fit either, which is what was overflowing/
+     crushing the cards. stacked (not horizontal-scroll) to match how
+     the compare table also stacks at this width — one responsive
+     pattern, not two. */
+  @media (max-width: 860px) {
+    .product-grid {
+      grid-template-columns: 1fr;
+      padding: 0;
+      gap: 48px;
+    }
+  }
+
+  .product-card {
+    padding: 0 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .product-card-name {
+    font-size: clamp(19px, 1.7vw, 24px);
+    font-weight: 800;
+    margin: 0;
+  }
+
+  .product-card-tagline {
+    font-size: 14px;
+    color: rgba(10, 10, 10, 0.55);
+    margin: 6px 0 0;
+    line-height: 1.5;
+  }
+
+  .product-card-figure {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 20px 0 8px;
+  }
+
+  .product-card-img {
+    max-width: 80%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 16px 22px rgba(10,10,10,0.16));
+    transition: filter 0.3s ease;
+  }
+
+  /* LAMTOR-1 and LAMTOR-1 Pro's second color (white sole, black sole)
+     has no hue component, so hue-rotate only ever touches the blue
+     strap/upper and stays clean — they get blue/red. LAMTOR-1 Plus's
+     sole IS tan (real hue), so rotating it drags the sole color along
+     for the ride too; accepted as a known trade-off in exchange for
+     Plus getting its own third color (green) instead of just the two. */
+  .product-card[data-color="red"] .product-card-img {
+    filter: drop-shadow(0 16px 22px rgba(10,10,10,0.16)) hue-rotate(141deg) saturate(1.15) brightness(1.08);
+  }
+
+  .product-card[data-color="green"] .product-card-img {
+    /* target hue ~150° (emerald leans slightly teal, not a flat grass
+       green) — rotation is relative to Plus's measured base blue
+       (~219°), same math as the red rotation above */
+    filter: drop-shadow(0 16px 22px rgba(10,10,10,0.16)) hue-rotate(-69deg) saturate(1.15) brightness(1.08);
+  }
+
+  .product-card-swatches {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 4px;
+    /* reserves room below the swatches for the color-name pill, which
+       is positioned absolutely so it can slide without affecting the
+       swatch row's own layout */
+    padding-bottom: 30px;
+  }
+
+  .product-swatch {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    padding: 3px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .product-swatch-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+  }
+
+  .product-swatch[data-color="blue"]  .product-swatch-dot { background: #1e5aa8; }
+  .product-swatch[data-color="red"]   .product-swatch-dot { background: #c23c30; }
+  .product-swatch[data-color="green"] .product-swatch-dot { background: #148a63; }
+
+  .product-swatch.is-active { border-color: var(--navy); }
+
+  /* tracks whichever swatch is currently selected — JS sets `left` to
+     that swatch's center (in px, relative to .product-card-swatches)
+     on click and once on load, and the transition makes it slide
+     rather than jump */
+  .product-card-colorname {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    transform: translateX(-50%);
+    margin-top: -20px;
+    font-size: 12px;
+    color: rgba(10, 10, 10, 0.5);
+    white-space: nowrap;
+    transition: left 0.25s ease;
+  }
+
+  .product-card-footline {
+    width: 100%;
+    border-top: 1px solid rgba(10, 10, 10, 0.1);
+    margin-top: 24px;
+    padding-top: 16px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+  }
+
+  .buy-btn {
+    margin-top: 20px;
+    padding: 10px 30px;
+    border: none;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--cream);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+
+  .buy-btn:hover { background: #164680; }
+  .buy-btn:active { transform: scale(0.96); }
+
+  /* ---- compare table (Apple-style label column + one column per
+     model) ----
+     .compare-wrap does NOT cap its width — it spans the same width as
+     .compare-title/.compare-footnote (which is why their edges match),
+     while .compare-row insets its OWN 3 value columns with padding
+     computed to land exactly where .product-grid's cards are, without
+     .product-grid itself moving or knowing this table exists. the
+     label then hangs in the natural leftover space that padding
+     creates, via position:absolute — it never becomes a real grid
+     track, so it can never push the values off that alignment. */
+  .compare-wrap {
+    margin: 120px auto 0;
+  }
+
+  .compare-title {
+    font-size: clamp(22px, 2.4vw, 30px);
+    font-weight: 800;
+    margin: 0 0 8px;
+  }
+
+  .compare-table {
+    margin-top: 24px;
+    border-top: 1px solid rgba(10, 10, 10, 0.12);
+  }
+
+  .compare-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    align-items: center;
+    border-bottom: 1px solid rgba(10, 10, 10, 0.12);
+    /* 1020px, not 1200 — .product-grid's cards live in the CENTER
+       1020px of its own 1200px box (90px padding each side), so that's
+       the actual target zone to match, not the full 1200. stored in a
+       custom property so .compare-label below can also reference it —
+       the label hangs from where THIS padding ends (i.e. from the
+       padded content's edge), not from the row's own outer edge,
+       which otherwise wastes exactly this much space. */
+    --gutter: max(0px, calc((100% - 1020px) / 2));
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+
+  .compare-row.compare-head .compare-cell {
+    font-weight: 800;
+    font-size: 15px;
+    padding: 18px 0;
+  }
+
+  .compare-label {
+    position: absolute;
+    /* width matches .product-grid's own 90px inset, so the label sits
+       in the same reserved space rather than needing extra room the
+       page doesn't reliably have */
+    left: calc(var(--gutter) - 90px);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 90px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    line-height: 1.4;
+    color: rgba(10, 10, 10, 0.5);
+    text-align: right;
+    padding-right: 8px;
+  }
+
+  .compare-cell {
+    text-align: center;
+    font-size: 14px;
+    padding: 18px 0;
+  }
+
+  /* below ~1400px there isn't enough gutter (the leftover width past
+     .product-grid's inset 1020px card zone) for the label to hang
+     without clipping. matching the label to .product-grid's own 90px
+     inset (rather than the old 1200px-wide target) dropped this
+     threshold from ~1650px to ~1400px — a real improvement, not
+     eliminated, since the gutter still shrinks with viewport. below
+     the threshold the label drops into normal flow as its own line
+     above the row. */
+  @media (max-width: 1400px) {
+    .compare-row {
+      /* .compare-row's 32px gap is meant for the horizontal space
+         between the 3 value columns — but once the label becomes a
+         real grid item spanning its own line above them, that same
+         32px ALSO becomes the vertical gap between the label line and
+         the value line (grid's row-gap and column-gap share the `gap`
+         shorthand), which read as "label glued to the line above,
+         miles from its own value below". row-gap needed here is much
+         smaller; column-gap between the 3 values still wants 32px. */
+      row-gap: 6px;
+      column-gap: 32px;
+    }
+    .compare-label {
+      position: static;
+      left: auto;
+      width: auto;
+      transform: none;
+      text-align: left;
+      padding-right: 0;
+      /* matches .compare-cell's own 18px top padding — without this
+         the label sat flush against the border-top line above it
+         while the values below got proper breathing room */
+      padding-top: 18px;
+      padding-bottom: 4px;
+      font-weight: 700;
+      grid-column: 1 / -1;
+    }
+  }
+
+  /* matches .product-grid's own breakpoint on purpose — below it the
+     cards are already stacked to 1 column, so pixel-alignment stops
+     meaning anything and both switch to a plain stacked layout
+     together, in one step instead of an in-between "half-aligned"
+     state. */
+  @media (max-width: 860px) {
+    .compare-row {
+      grid-template-columns: 1fr;
+      /* single column now, so this 32px is entirely vertical spacing
+         between label/value1/value2/value3 stacked in document order —
+         same fix as the 1400px tier, tightened further as there's only
+         ever one column here */
+      row-gap: 4px;
+      text-align: left;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .compare-label {
+      position: static;
+      width: auto;
+      transform: none;
+      text-align: left;
+      padding-top: 18px;
+      padding-bottom: 4px;
+      font-weight: 700;
+      margin-right: 0;
+    }
+    .compare-row.compare-head { display: none; }
+    .compare-cell {
+      text-align: left;
+      padding-left: 0;
+      padding-right: 0;
+    }
+    .compare-cell::before {
+      content: attr(data-model);
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+      color: rgba(10, 10, 10, 0.45);
+      margin-bottom: 2px;
+    }
+  }
+
+  .product-float-bar {
+    position: fixed;
+    /* spans from the very top again (its translucent/blurred backing
+       reaches up behind the nav) — this only works because .hero-nav/
+       .hero-title-block were moved out of .stage (see the HTML
+       comment there): while nested inside .stage's position:sticky +
+       overflow:hidden, the nav ended up compositing BELOW this bar
+       despite its much higher z-index. confirmed fixed by screenshot,
+       not just reasoning about it, after the move. */
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 22;
+    background: rgba(245, 245, 247, 0.92);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(10, 10, 10, 0.1);
+    padding: 8px 6vw;
+    padding-top: 62px;
+    opacity: 0;
+    transform: translateY(-12px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+
+  .product-float-bar.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .product-float-bar-inner {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+    /* matches .product-grid's own 90px inset so each name+Buy column
+       lines up with its card below instead of sitting 90px off */
+    padding: 0 90px;
+  }
+
+  .product-float-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .product-float-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  .buy-btn--small {
+    margin-top: 0;
+    padding: 5px 16px;
+    font-size: 11px;
+  }
+
+  @media (max-width: 860px) {
+    .product-float-bar-inner { grid-template-columns: 1fr; gap: 8px; }
+    .product-float-bar { padding-top: 58px; }
+  }
+
+  /* ============ shared section chrome for everything below the
+     product grid — same eyebrow/title pattern, alternating cream/ink
+     backgrounds for rhythm the way a real product page breaks up long
+     scroll with section-to-section contrast ============ */
+  .feature-section {
+    padding: 100px 6vw;
+  }
+
+  .feature-section.is-dark {
+    background: var(--ink);
+    color: var(--cream);
+  }
+
+  .feature-eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--navy);
+    margin-bottom: 14px;
+  }
+
+  .is-dark .feature-eyebrow { color: #7fb3e8; }
+
+  .feature-title {
+    font-size: clamp(24px, 2.8vw, 36px);
+    font-weight: 800;
+    line-height: 1.35;
+    margin: 0 0 18px;
+  }
+
+  .feature-body {
+    font-size: clamp(15px, 1.3vw, 18px);
+    line-height: 1.8;
+    color: rgba(10, 10, 10, 0.7);
+    max-width: 560px;
+  }
+
+  .is-dark .feature-body { color: rgba(255, 237, 215, 0.75); }
+
+  /* ---- Air feature: text pinned to the left padding, image bleeding
+     all the way to the viewport's right edge (not just the section's
+     max-width) — this section overrides .feature-section's padding
+     itself rather than nesting inside it, since a true bleed can't
+     live inside a padded/centered container */
+  .feature-section.air-feature {
+    padding-top: 100px;
+    padding-bottom: 100px;
+    padding-right: 0;
+    overflow: hidden;
+  }
+
+  .air-section {
+    display: flex;
+    align-items: center;
+    gap: 48px;
+  }
+
+  .air-section-copy {
+    flex: 0 0 auto;
+    width: min(420px, 38vw);
+  }
+
+  .air-section-figure {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .air-section-figure img {
+    /* the PNG's own background is transparent (checked pixel-by-pixel —
+       corners are alpha 0), so the earlier white card behind it was
+       pure CSS, not something the source image needed. dropping it lets
+       the shoe sit directly on the black like every other prop shot on
+       this site, with a real contact shadow instead of a card edge. */
+    display: block;
+    width: 100%;
+    max-width: 900px;
+    height: auto;
+    filter: drop-shadow(0 20px 34px rgba(0,0,0,0.5));
+  }
+
+  .air-section-copy .feature-title { color: var(--cream); }
+
+  @media (max-width: 860px) {
+    .feature-section.air-feature { padding-right: 6vw; }
+    .air-section { flex-direction: column; text-align: center; }
+    .air-section-copy { order: 2; width: 100%; }
+    .air-section-figure { order: 1; justify-content: center; }
+    .feature-body { margin-left: auto; margin-right: auto; }
+  }
+
+  /* ---- stat callout (防滑係數) ---- */
+  .stat-section {
+    max-width: 1000px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 56px;
+  }
+
+  .stat-number {
+    font-size: clamp(64px, 9vw, 128px);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--navy);
+    white-space: nowrap;
+  }
+
+  .stat-number sup {
+    font-size: 0.35em;
+    vertical-align: super;
+  }
+
+  .stat-footnote {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: rgba(10, 10, 10, 0.45);
+    border-left: 2px solid rgba(10, 10, 10, 0.2);
+    padding-left: 12px;
+    margin-top: 20px;
+    line-height: 1.7;
+  }
+
+  @media (max-width: 700px) {
+    .stat-section { grid-template-columns: 1fr; text-align: center; gap: 24px; }
+    .stat-footnote { border-left: none; padding-left: 0; }
+  }
+
+  /* ---- encryption feature (dark, icon + copy) ---- */
+  .encryption-section {
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    align-items: flex-start;
+    gap: 40px;
+  }
+
+  .feature-icon {
+    flex: none;
+    width: 64px;
+    height: 64px;
+    color: var(--navy);
+  }
+
+  .is-dark .feature-icon { color: var(--cream); }
+
+  @media (max-width: 700px) {
+    .encryption-section { flex-direction: column; align-items: center; text-align: center; }
+  }
+
+  /* ---- grip certifications (three badges) ---- */
+  .grip-section {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .grip-badges {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .grip-badge {
+    border: 1px solid rgba(10, 10, 10, 0.12);
+    border-radius: 16px;
+    padding: 28px 22px;
+    text-align: center;
+  }
+
+  .grip-badge-icon {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    color: var(--navy);
+  }
+
+  .grip-badge-title {
+    font-weight: 700;
+    font-size: 15px;
+    margin: 0 0 6px;
+  }
+
+  .grip-badge-body {
+    font-size: 13px;
+    color: rgba(10, 10, 10, 0.55);
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  @media (max-width: 700px) {
+    .grip-badges { grid-template-columns: 1fr; }
+  }
+
+  .compare-footnote {
+    font-size: 12px;
+    line-height: 1.7;
+    color: rgba(10, 10, 10, 0.45);
+    margin-top: 24px;
+  }
+
+  /* ---- edge-computing / legacy-support: reuse .encryption-section's
+     icon+copy layout, just with a small spec-style footer line added
+     for the punchline (matches .stat-footnote's register) ---- */
+  .edge-footer {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+    margin-top: 18px;
+    opacity: 0.6;
+  }
+
+  /* ---- drop/vibration test: two stats side by side, same pattern as
+     .stat-section's big-number-plus-caption but twinned ---- */
+  .test-section {
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .test-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    margin-top: 48px;
+  }
+
+  .test-stat-label {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: rgba(255, 237, 215, 0.55);
+    margin-bottom: 10px;
+  }
+
+  .test-stat-value {
+    font-size: clamp(18px, 2vw, 24px);
+    font-weight: 700;
+    line-height: 1.5;
+  }
+
+  .test-punchline {
+    margin-top: 40px;
+    font-size: clamp(16px, 1.6vw, 20px);
+    font-weight: 600;
+  }
+
+  /* full-bleed scooter-speed banner below the stats. breaks out of the
+     section's 6vw padding to span the whole viewport width. */
+  .test-figure {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-top: 72px;
+    margin-bottom: -100px; /* cancel the section's bottom padding so the
+                              image sits flush at the section's edge */
+    overflow: hidden;
+  }
+
+  .test-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* dark scrim up from the bottom so the overlaid punchline stays legible
+     over the busy footboard, plus a soft top scrim to ease the photo's
+     hard top edge into the charcoal section above it */
+  .test-figure::before,
+  .test-figure::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    pointer-events: none;
+  }
+
+  .test-figure::before {
+    top: 0;
+    height: 22%;
+    background: linear-gradient(to bottom, #18181b 0%, transparent 100%);
+  }
+
+  .test-figure::after {
+    bottom: 0;
+    height: 45%;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+  }
+
+  .test-punchline--overlay {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(28px, 5vw, 72px);
+    transform: translateX(-50%);
+    z-index: 1;
+    margin-top: 0;
+    width: min(90%, 640px);
+    text-align: center;
+    color: var(--cream);
+    text-shadow: 0 2px 16px rgba(0,0,0,0.8);
+  }
+
+  @media (max-width: 700px) {
+    .test-stats { grid-template-columns: 1fr; gap: 28px; }
+    .test-figure { margin-top: 48px; }
+    .test-punchline--overlay { bottom: 18px; }
+  }
+
+  /* ---- testimonials: same card language as .grip-badge, but built
+     for a quote + attribution instead of an icon + caption ---- */
+  .testimonial-section {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    margin-top: 48px;
+  }
+
+  .testimonial-card {
+    border: 1px solid rgba(10, 10, 10, 0.12);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+
+  /* the 4th/5th cards span 1.5 columns each on the 2-row tail so five
+     cards don't leave one lonely orphan in a 3-column grid */
+  .testimonial-grid .testimonial-card:nth-child(4),
+  .testimonial-grid .testimonial-card:nth-child(5) {
+    grid-column: span 1;
+  }
+
+  .testimonial-quote {
+    font-size: 16px;
+    line-height: 1.6;
+    font-weight: 600;
+    margin: 0 0 16px;
+  }
+
+  .testimonial-quote::before { content: "「"; }
+  .testimonial-quote::after { content: "」"; }
+
+  .testimonial-attribution {
+    font-size: 13px;
+    color: rgba(10, 10, 10, 0.5);
+  }
+
+  .testimonial-attribution::before {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 1px;
+    background: rgba(10, 10, 10, 0.3);
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 860px) {
+    .testimonial-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (max-width: 600px) {
+    .testimonial-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ---- fake paper: the only serif moment on the whole page, on
+     purpose — everything else is the system sans stack, so switching
+     to a serif here is what makes it read as "suddenly a real paper"
+     instead of just another marketing block ---- */
+  .paper-section {
+    max-width: 760px;
+    margin: 0 auto;
+    font-family: Georgia, "Noto Serif TC", "Times New Roman", serif;
+  }
+
+  .paper-arxiv-id {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    color: rgba(10, 10, 10, 0.45);
+    margin-bottom: 20px;
+  }
+
+  .paper-title {
+    font-size: clamp(22px, 2.6vw, 30px);
+    font-weight: 700;
+    line-height: 1.4;
+    margin: 0 0 8px;
+  }
+
+  .paper-authors {
+    font-size: 14px;
+    color: rgba(10, 10, 10, 0.55);
+    margin-bottom: 28px;
+    font-style: italic;
+  }
+
+  .paper-abstract-label {
+    font-weight: 700;
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+
+  .paper-abstract-body {
+    font-size: 15px;
+    line-height: 1.85;
+    text-align: justify;
+    margin: 0 0 32px;
+  }
+
+  .paper-links {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 36px;
+    font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
+  }
+
+  .paper-link {
+    border: 1px solid rgba(10, 10, 10, 0.2);
+    border-radius: 999px;
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+
+  .paper-bibtex-label {
+    font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: rgba(10, 10, 10, 0.5);
+    margin-bottom: 10px;
+  }
+
+  .paper-bibtex-wrap {
+    position: relative;
+  }
+
+  .paper-bibtex {
+    background: #0a0a0a;
+    color: #d8d8d8;
+    border-radius: 10px;
+    padding: 20px 22px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .paper-copy-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: #d8d8d8;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+
+  .paper-copy-btn:hover { background: rgba(255, 255, 255, 0.15); }
+  .paper-copy-btn.is-copied { color: #8fd6a8; border-color: rgba(143, 214, 168, 0.4); }
+
+  @media (max-width: 700px) {
+    .paper-abstract-body { text-align: left; }
+  }
+
+  /* ---- peer review: Dcard/Reddit-style flat comment list ---- */
+  .peer-review-section {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+
+  .peer-comment-list {
+    margin-top: 40px;
+    border-top: 1px solid rgba(255, 237, 215, 0.15);
+  }
+
+  .peer-comment {
+    padding: 22px 0;
+    border-bottom: 1px solid rgba(255, 237, 215, 0.15);
+  }
+
+  .peer-comment-author {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.03em;
+    color: rgba(255, 237, 215, 0.5);
+    margin-bottom: 8px;
+  }
+
+  .peer-comment-body {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  /* ---- closing CTA: the one place on the page that gets to be quiet —
+     a single oversized line, then the brand sign-off underneath it ---- */
+  .closing-section {
+    max-width: 780px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .closing-line {
+    font-size: clamp(22px, 3.2vw, 38px);
+    font-weight: 700;
+    line-height: 1.5;
+    margin: 0 0 48px;
+  }
+
+  .closing-signoff {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    color: rgba(255, 237, 215, 0.6);
+  }
+
+  .closing-signoff a {
+    color: rgba(255, 237, 215, 0.85);
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 237, 215, 0.3);
+  }
+
+  /* ---- Pro hero title card — mimics the iPhone-Pro-page trick of a
+     massive wordmark sitting behind/above a dramatic macro product
+     shot, product-colored type on black. pro.png is already a
+     low-angle macro of the honeycomb massage sole with black
+     background, so it drops straight into this without any
+     cropping/masking work. ---- */
+  .pro-hero {
+    background: #000;
+    /* no horizontal padding — the figure below is full-bleed edge to
+       edge; the eyebrow/word centre themselves via text-align */
+    padding: 90px 0 0;
+    overflow: hidden;
+  }
+
+  .pro-hero-eyebrow {
+    text-align: center;
+    font-size: clamp(20px, 2.6vw, 34px);
+    font-weight: 700;
+    /* solid fallback, then the same left-light gradient as PRO clipped
+       to the text — so the mask sweep below brushes in a gradient, not
+       a flat colour, matching PRO */
+    color: #1D5AA8;
+    background: linear-gradient(90deg, #ADC5E9 0%, #1D5AA8 55%, #021249 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
+  }
+
+  .pro-hero-word {
+    text-align: center;
+    font-size: clamp(90px, 17vw, 260px);
+    font-weight: 900;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    /* solid colour kept only as a fallback for browsers without
+       background-clip:text — modern ones use the gradient below */
+    color: #3a6bd8;
+    /* gradient fill clipped to the glyph shape, lighter on the left */
+    background: linear-gradient(90deg, #ADC5E9 10%, #1D5AA8 45%, #1D5AA8 55%, #021249 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    /* TRANSPARENT stroke, not a solid colour: -webkit-text-stroke can
+       only take one flat colour, so instead of drawing a mid-blue rim
+       (which broke the gradient at the edges) the stroke is transparent
+       and just widens the glyph geometry. background-clip:text then
+       fills that whole fattened shape — outline included — with the one
+       gradient, so the "stroke" reads as gradient too. */
+    -webkit-text-stroke: 0.05em transparent;
+    margin: 0;
+  }
+
+  /* gradient-mask sweep reveal for the LAMTOR-1 eyebrow + PRO wordmark:
+     a soft-edged mask (300% wide, wide feather) starts parked to the
+     right so the text is fully hidden, then slides left when the
+     section enters view (JS adds .is-revealed), brushing the letters
+     into visibility one after another — left to right. done with a mask
+     rather than per-letter opacity so PRO's own background-clip gradient
+     stays intact. */
+  .pro-hero-eyebrow,
+  .pro-hero-word {
+    -webkit-mask-image: linear-gradient(90deg, #000 30%, transparent 70%);
+    mask-image: linear-gradient(90deg, #000 30%, transparent 70%);
+    -webkit-mask-size: 300% 100%;
+    mask-size: 300% 100%;
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+    transition: -webkit-mask-position 1.1s ease, mask-position 1.1s ease;
+  }
+
+  /* title sweeps in FIRST (eyebrow, then PRO); the shoe fades in after,
+     see the figure entrance below */
+  .pro-hero.is-revealed .pro-hero-eyebrow,
+  .pro-hero.is-revealed .pro-hero-word {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+    transition-delay: 0.1s;
+  }
+
+  .pro-hero.is-revealed .pro-hero-word {
+    transition-delay: 0.35s;
+  }
+
+  .pro-hero-figure {
+    position: relative;
+    width: 100%;
+    margin-top: 1vw;
+    /* clips the always-slightly-larger image so the scroll parallax
+       (JS below) can shift it up/down within the overflow budget
+       without ever exposing the cutout's edges against the black */
+    overflow: hidden;
+    /* hidden until the section is revealed; the entrance animation
+       below fades it in high, then drops it down into place */
+    opacity: 0;
+  }
+
+  /* shoe entrance: a simple fade-in (no up/down move), delayed so it
+     appears AFTER the title has swept in. only opacity animates here, so
+     it never touches the inner <img>'s scroll zoom/parallax transform. */
+  @keyframes proShoeFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .pro-hero.is-revealed .pro-hero-figure {
+    animation: proShoeFadeIn 0.9s ease both;
+    animation-delay: 1.05s;
+  }
+
+  .pro-hero-figure img {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* starts at scale 1 — the original, uncropped layout. the zoom and
+       parallax both grow from 0 as you scroll (JS below). origin at the
+       TOP edge so scaling only ever grows the image DOWNWARD — the
+       shoe's top rim stays anchored and is never clipped, while the
+       extra height spills off the bottom (behind the caption scrim) and
+       is trimmed by overflow:hidden. */
+    transform: scale(1);
+    transform-origin: center top;
+    will-change: transform;
+  }
+
+  /* dark scrim rising from the bottom edge so the overlaid caption
+     stays legible over the busy bright-blue massage nubs */
+  .pro-hero-figure::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 55%;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.45) 45%, transparent 100%);
+    pointer-events: none;
+  }
+
+  .pro-hero-caption {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(24px, 5vw, 64px);
+    transform: translateX(-50%);
+    z-index: 1;
+    width: min(88%, 560px);
+    text-align: center;
+    color: var(--cream);
+    font-size: clamp(15px, 1.5vw, 20px);
+    font-weight: 600;
+    line-height: 1.7;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.7);
+    margin: 0;
+  }
+
+  /* per-character blur-in: JS splits the caption into .ch spans and sets
+     a staggered transition-delay on each; adding .is-revealed (once the
+     caption scrolls near) flips them all from blurred/hidden to sharp,
+     so they resolve one after another */
+  .pro-hero-caption .ch {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(4px);
+    transition: opacity 0.5s ease, filter 0.5s ease, transform 0.5s ease;
+  }
+
+  .pro-hero-caption.is-revealed .ch {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+
+  @media (max-width: 700px) {
+    .pro-hero { padding-top: 60px; }
+    .pro-hero-figure { margin-top: 4px; }
+    .pro-hero-caption { bottom: 18px; }
+  }
+
+  /* charcoal is the second dark tone alongside black (--ink) — used to
+     alternate the mostly-dark run of sections so it doesn't read as one
+     flat black wall. defined AFTER .feature-section.is-dark so it wins
+     the background at equal specificity; text colours still come from
+     the .is-dark rules, only the backdrop shifts. */
+  .feature-section.bg-charcoal { background: #18181b; }
+
+  /* dark-mode overrides for the grip badges and testimonial cards,
+     needed now that those two sections moved from cream to dark — their
+     ink borders/body text would otherwise vanish on the dark backdrop */
+  .is-dark .grip-badge { border-color: rgba(255, 237, 215, 0.18); }
+  .is-dark .grip-badge-icon { color: #7fb3e8; }
+  .is-dark .grip-badge-body { color: rgba(255, 237, 215, 0.6); }
+  .is-dark .testimonial-card { border-color: rgba(255, 237, 215, 0.18); }
+  .is-dark .testimonial-attribution { color: rgba(255, 237, 215, 0.55); }
+  .is-dark .testimonial-attribution::before { background: rgba(255, 237, 215, 0.35); }
 </style>
 </head>
 <body>
 
-<div class="scroll-track" id="scrollTrack">
-<div class="stage" id="stage">
-  <div class="hero-title-block">
-    <div class="wordmark"><span class="letter-clip"><span class="letter">L</span></span><span class="letter-clip"><span class="letter">A</span></span><span class="letter-clip"><span class="letter">M</span></span><span class="letter-clip"><span class="letter">T</span></span><span class="letter-clip"><span class="letter">O</span></span><span class="letter-clip"><span class="letter">R</span></span></div>
-    <div class="hero-tagline">為腳而生．為地而戰</div>
-  </div>
+<!-- hero-title-block and hero-nav live OUTSIDE .stage/.scroll-track on
+     purpose: both are position:fixed and meant to persist for the
+     whole page, but being DOM descendants of .stage (position:sticky +
+     overflow:hidden) put them in a different browser compositing
+     lineage than .product-float-bar — in testing, that asymmetry made
+     the float bar's backdrop-filter layer paint ABOVE the nav despite
+     the nav's much higher z-index (confirmed with
+     document.elementFromPoint, not just a guess). Moving them to be
+     plain top-level body children, alongside .product-float-bar and
+     .cursor-dot, puts everything fixed on the page in the same
+     compositing context so z-index actually behaves as declared. -->
+<div class="hero-title-block">
+  <div class="wordmark"><span class="letter-clip"><span class="letter">L</span></span><span class="letter-clip"><span class="letter">A</span></span><span class="letter-clip"><span class="letter">M</span></span><span class="letter-clip"><span class="letter">T</span></span><span class="letter-clip"><span class="letter">O</span></span><span class="letter-clip"><span class="letter">R</span></span></div>
+  <div class="hero-tagline">為腳而生．為地而戰</div>
+</div>
 
-  <nav class="hero-nav">
-    <span>INTRO</span>
-    <span>FEATURES</span>
-    <span>PRODUCT</span>
-    <span>CONTACT</span>
-  </nav>
+<nav class="hero-nav">
+  <span>INTRO</span>
+  <span>FEATURES</span>
+  <span>PRODUCT</span>
+  <span>CONTACT</span>
+</nav>
+
+<div class="scroll-track" id="scrollTrack" data-nav-theme="dark">
+<div class="stage" id="stage">
 
   <div class="side-tab"><span>LAMTOR-1 MODEL</span></div>
 
@@ -1318,7 +2524,7 @@
 
   <div class="hero-desc">
     <div class="hero-desc-en"><span class="line">Inspired by the everyday.</span><span class="line">Designed for real life.</span><span class="line">From balconies to beaches, LAMTOR is always on the right foot.</span></div>
-    <div class="hero-desc-zh"><span class="line">現在搭載開源模型 LAMTOR-1，</span><span class="line">24/7 全年無休運行。</span></div>
+    <div class="hero-desc-zh"><span class="line">現在搭載開源模型 LAMTOR-1</span><span class="line">24/7 全年無休運行</span></div>
   </div>
 
   <div class="photo-frame">
@@ -1358,10 +2564,10 @@
        scrubs (phase 2) — the JS drives each line's opacity/offset off
        p2, mirroring how the hero text left line by line in phase 1 -->
   <div class="transition-copy" id="transitionCopy" aria-hidden="true">
-    <p class="t-line" data-start="0.2">LAMTOR-1 能辨識超過 12 種穿法。</p>
-    <p class="t-line" data-start="0.45">包括正穿、反穿，以及你阿嬤堅持的「左右腳互換」穿法。</p>
-    <p class="t-line t-spec" data-start="0.7">準確率：無從驗證。</p>
-    <p class="t-line t-spec" data-start="0.78">信心程度：極高。</p>
+    <p class="t-line" data-start="0.2">LAMTOR-1 能辨識超過 12 種穿法</p>
+    <p class="t-line" data-start="0.45">包括正穿、反穿，以及你阿嬤堅持的「左右腳互換」穿法</p>
+    <p class="t-line t-spec" data-start="0.7">準確率：無從驗證</p>
+    <p class="t-line t-spec" data-start="0.78">信心程度：極高</p>
   </div>
 
   <!-- phase-3 scene swap: the balcony photo crossfades in behind a
@@ -1379,18 +2585,18 @@
        final landed pose. line thresholds are p3 progress. -->
   <div class="powered-copy" id="poweredCopy" aria-hidden="true">
     <p class="p-line p-overline" data-start="0.3">Powered by barefoot</p>
-    <p class="p-line p-headline" data-start="0.38">搭載 LAMTOR-1，一個開源、免授權、在騎樓與陽台上完成訓練的基礎模型。</p>
-    <p class="p-line p-body" data-start="0.5">沒有雲端依賴。沒有訂閱制。</p>
-    <p class="p-line p-body" data-start="0.56">只有一雙拖鞋，和它對地板的絕對信任。</p>
+    <p class="p-line p-headline" data-start="0.38">搭載 LAMTOR-1，一個開源、免授權、在騎樓與陽台上完成訓練的基礎模型</p>
+    <p class="p-line p-body" data-start="0.5">沒有雲端依賴。沒有訂閱制</p>
+    <p class="p-line p-body" data-start="0.56">只有一雙拖鞋，和它對地板的絕對信任</p>
   </div>
 
   <!-- second phase-3 beat: a bone-dry product-warning label on the
        right while the backdrop walks out of the balcony and into the
        arcade street — the copy and the scene leave the house together -->
   <div class="warning-copy" id="warningCopy" aria-hidden="true">
-    <p class="w-line w-head" data-start="0.72">警告：LAMTOR-1 具高度穿戴便利性。</p>
+    <p class="w-line w-head" data-start="0.72">警告：LAMTOR-1 具高度穿戴便利性</p>
     <p class="w-line" data-start="0.78">使用者可能在下樓倒垃圾、去巷口買飲料、</p>
-    <p class="w-line" data-start="0.84">甚至到超商繳費時，完全忘記自己還穿著它。</p>
+    <p class="w-line" data-start="0.84">甚至到超商繳費時，完全忘記自己還穿著它</p>
   </div>
 
   <!-- lives outside .photo-frame on purpose: .photo-frame's blur filter
@@ -1498,6 +2704,477 @@
     SCROLL TO CONTINUE
   </div>
 </div>
+</div>
+
+<!-- Pro hero title card — same trick as Apple's iPhone Pro page: a
+     huge wordmark colored to match the unit, sitting above a dramatic
+     macro shot of the thing that makes this model "Pro" (the honeycomb
+     massage sole) -->
+<section class="pro-hero" data-nav-theme="dark">
+  <p class="pro-hero-eyebrow">LAMTOR-1</p>
+  <h2 class="pro-hero-word">PRO</h2>
+  <div class="pro-hero-figure">
+    <img src="assets/props/pro.webp" alt="LAMTOR-1 Pro 蜂巢按摩顆粒特寫">
+    <p class="pro-hero-caption">
+      999 顆按摩顆粒，近看比想像中還嚇人，走一趟菜市場，你的腳會先謝謝你
+    </p>
+  </div>
+</section>
+
+<!-- fake stat, styled to echo oryzo's "37.9% More Circular" callout —
+     a suspiciously precise number with a straight-faced footnote doing
+     the joke's actual work -->
+<section class="feature-section" data-nav-theme="light">
+  <div class="stat-section">
+    <div class="stat-number"><span class="stat-num-value" data-target="42.6">0.0</span><sup>%</sup></div>
+    <div>
+      <h2 class="feature-title">防滑係數提升</h2>
+      <p class="feature-body">
+        經實驗室測試（菜市場濕滑瓷磚，未事先告知廠商），LAMTOR-1 的抓地表現較前代顯著提升
+      </p>
+      <p class="stat-footnote">
+        測試對象：一位提著兩籃菜、正在講電話的阿姨<br>
+        測試方法：無從公開，測試結果：無從質疑
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Grip-Locked™ tech — three deadpan "certifications" -->
+<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
+  <div class="grip-section">
+    <div class="feature-eyebrow">Grip-Locked™</div>
+    <h2 class="feature-title">抓地力，通過三重人生現場認證</h2>
+    <p class="feature-body">
+      Grip-Locked™ 防滑技術，通過巷口柏油路、廟埕地磚、以及你家浴室永遠沒乾的那塊瓷磚三重認證
+    </p>
+    <div class="grip-badges">
+      <div class="grip-badge">
+        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 34 L42 34" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M10 34c0-10 6-18 14-18s14 8 14 18" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M16 34c0-6 3.5-11 8-11s8 5 8 11" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3"/>
+        </svg>
+        <p class="grip-badge-title">巷口柏油路</p>
+        <p class="grip-badge-body">下雨也一樣衝去買飲料</p>
+      </div>
+      <div class="grip-badge">
+        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="8" width="32" height="32" rx="3" stroke="currentColor" stroke-width="2.5"/>
+          <path d="M8 24h32M24 8v32" stroke="currentColor" stroke-width="2"/>
+        </svg>
+        <p class="grip-badge-title">廟埕地磚</p>
+        <p class="grip-badge-body">拜拜途中不失足</p>
+      </div>
+      <div class="grip-badge">
+        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M24 6c8 8 14 15 14 22a14 14 0 1 1-28 0c0-7 6-14 14-22Z" stroke="currentColor" stroke-width="2.5"/>
+        </svg>
+        <p class="grip-badge-title">永遠沒乾的浴室瓷磚</p>
+        <p class="grip-badge-body">洗完澡的最後一道防線</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- "smart flip encryption" parody — deadpan security-feature framing
+     for the fact that nobody can tell if you're wearing it backwards -->
+<section class="feature-section is-dark" data-nav-theme="dark">
+  <div class="encryption-section">
+    <svg class="feature-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="14" y="28" width="36" height="26" rx="4" stroke="currentColor" stroke-width="2.5"/>
+      <path d="M22 28V20a10 10 0 0 1 20 0v8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="32" cy="39" r="3.5" fill="currentColor"/>
+      <path d="M32 42.5V47" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="feature-eyebrow">Zero-ID Wear Encryption</div>
+      <h2 class="feature-title">正反不分，是一種加密技術</h2>
+      <p class="feature-body">
+        LAMTOR-1 採用「零辨識穿法加密」技術，穿反了？沒人看得出來，包括你自己，
+        這不是設計缺陷，這是隱私功能
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- edge computing parody — refuses the cloud, runs locally on
+     whatever floor you happen to be standing on -->
+<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
+  <div class="encryption-section">
+    <svg class="feature-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 44a10 10 0 0 1 0-20 14 14 0 0 1 27-4 9 9 0 0 1-2 18H18Z" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+      <line x1="10" y1="10" x2="52" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <div class="feature-eyebrow">Edge Computing, Not Cloud</div>
+      <h2 class="feature-title">LAMTOR-1 拒絕雲端運算</h2>
+      <p class="feature-body">
+        它只在騎樓、陽台、與客廳和房間之間的那條地板線上運行，
+        不上傳、不同步、不備份
+      </p>
+      <p class="edge-footer">延遲：0ms，因為它從不連線</p>
+    </div>
+  </div>
+</section>
+
+<!-- legacy support — the compatibility promise no real spec sheet
+     would actually make, said with total confidence anyway -->
+<section class="feature-section is-dark" data-nav-theme="dark">
+  <div class="encryption-section">
+    <svg class="feature-icon" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="22" cy="32" r="14" stroke="currentColor" stroke-width="2.5"/>
+      <circle cx="42" cy="32" r="14" stroke="currentColor" stroke-width="2.5"/>
+    </svg>
+    <div>
+      <div class="feature-eyebrow">Legacy Support</div>
+      <h2 class="feature-title">向下相容，完美呈現</h2>
+      <p class="feature-body">
+        LAMTOR-1 與阿公阿嬤時代的所有地板、所有拖鞋放置習慣、
+        以及「進門要脫鞋」的所有家規，全面相容
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- drop/vibration test — mimics a phone-durability spec block, then
+     drops the actual subject of the test in the last line -->
+<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
+  <div class="test-section">
+    <div class="feature-eyebrow">Durability Testing</div>
+    <h2 class="feature-title">摔過、震過，還是那雙</h2>
+    <div class="test-stats">
+      <div>
+        <div class="test-stat-label">DROP-TESTED</div>
+        <div class="test-stat-value">從機車踏板到柏油路，200 次以上</div>
+      </div>
+      <div>
+        <div class="test-stat-label">VIBRATION-TESTED</div>
+        <div class="test-stat-value">通過全台機車引擎怠速震動測試</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- full-bleed payoff shot: the flip-flop on a scooter footboard at
+       speed (motion blur + vibration rings), with the punchline about
+       the rider's exposed toes overlaid on the very toes in frame -->
+  <div class="test-figure">
+    <img src="assets/props/scooter-speed.webp" alt="穿著 LAMTOR-1 的腳踩在疾駛的機車踏板上">
+    <p class="test-punchline test-punchline--overlay">結果：拖鞋沒事，騎士的腳趾，不予置評</p>
+  </div>
+</section>
+
+<!-- testimonials — real-life Taiwanese occupations standing in for
+     the astronaut/pirate-king/AI-influencer/flat-earther lineup on
+     the reference site -->
+<section class="feature-section is-dark" data-nav-theme="dark">
+  <div class="testimonial-section">
+    <div class="feature-eyebrow">What People Are Saying</div>
+    <h2 class="feature-title">來自各行各業的信任</h2>
+    <div class="testimonial-grid">
+      <div class="testimonial-card">
+        <p class="testimonial-quote">穿過最好的一雙</p>
+        <p class="testimonial-attribution">巷口里長</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">魚市場濕滑地板的救星</p>
+        <p class="testimonial-attribution">傳統市場魚販</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">我這攤位站了 15 年，膝蓋都靠它</p>
+        <p class="testimonial-attribution">夜市烤香腸老闆</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">客人牽車來修，我看他鞋就知道他內行</p>
+        <p class="testimonial-attribution">機車行老闆</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">候診三小時，腳最舒服的就是這雙</p>
+        <p class="testimonial-attribution">醫院候診區阿姨</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="product-section" id="product" data-nav-theme="light">
+  <div class="product-section-head">
+    <div class="product-section-eyebrow">Product Lineup</div>
+    <h2 class="product-section-title">選一雙，適合你人生的拖鞋</h2>
+  </div>
+
+  <div class="product-grid">
+
+    <div class="product-card" data-color="blue">
+      <h3 class="product-card-name">LAMTOR-1</h3>
+      <p class="product-card-tagline">標準版，你家門口那雙</p>
+      <div class="product-card-figure">
+        <img class="product-card-img" src="assets/props/lamtor-standard.webp" alt="LAMTOR-1">
+      </div>
+      <div class="product-card-swatches">
+        <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
+        <button class="product-swatch" type="button" data-color="red" aria-label="滿地紅"><span class="product-swatch-dot"></span></button>
+        <p class="product-card-colorname">青天藍</p>
+      </div>
+      <div class="product-card-footline">從有記憶以來，它就在那裡</div>
+      <button class="buy-btn" type="button">Buy</button>
+    </div>
+
+    <div class="product-card" data-color="blue">
+      <h3 class="product-card-name">LAMTOR-1 Plus</h3>
+      <p class="product-card-tagline">菱格編織鞋面，防滑大底加強版</p>
+      <div class="product-card-figure">
+        <img class="product-card-img" src="assets/props/lamtor-plus.webp" alt="LAMTOR-1 Plus">
+      </div>
+      <div class="product-card-swatches">
+        <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
+        <button class="product-swatch" type="button" data-color="red" aria-label="滿地紅"><span class="product-swatch-dot"></span></button>
+        <button class="product-swatch" type="button" data-color="green" aria-label="祖母綠"><span class="product-swatch-dot"></span></button>
+        <p class="product-card-colorname">青天藍</p>
+      </div>
+      <div class="product-card-footline">多了紋路，多了一種「我很講究」的錯覺</div>
+      <button class="buy-btn" type="button">Buy</button>
+    </div>
+
+    <div class="product-card" data-color="blue">
+      <h3 class="product-card-name">LAMTOR-1 Pro</h3>
+      <p class="product-card-tagline">蜂巢按摩顆粒，走路兼做腳底按摩</p>
+      <div class="product-card-figure">
+        <img class="product-card-img" src="assets/props/lamtor-pro.webp" alt="LAMTOR-1 Pro">
+      </div>
+      <div class="product-card-swatches">
+        <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
+        <button class="product-swatch" type="button" data-color="red" aria-label="滿地紅"><span class="product-swatch-dot"></span></button>
+        <p class="product-card-colorname">青天藍</p>
+      </div>
+      <div class="product-card-footline">長輩級信仰之作，一穿就回不去</div>
+      <button class="buy-btn" type="button">Buy</button>
+    </div>
+
+  </div>
+
+  <!-- Apple-style compare table — label column + one value column per
+       model, deadpan enough that "台灣製造" being identical across all
+       three (the one row where there's genuinely no difference) reads
+       as its own joke sitting inside an otherwise straight format -->
+  <div class="compare-wrap">
+  <h3 class="compare-title">規格比較</h3>
+  <div class="compare-table">
+      <div class="compare-row compare-head">
+        <div class="compare-label"></div>
+        <div class="compare-cell">LAMTOR-1</div>
+        <div class="compare-cell">LAMTOR-1 Plus</div>
+        <div class="compare-cell">LAMTOR-1 Pro</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">鞋面工藝</div>
+        <div class="compare-cell" data-model="LAMTOR-1">素面 EVA</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">菱格編織紋</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">蜂巢按摩顆粒</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">大底顏色</div>
+        <div class="compare-cell" data-model="LAMTOR-1">白色</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">卡其色</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">黑色</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">大底特性</div>
+        <div class="compare-cell" data-model="LAMTOR-1">防滑耐磨・柔軟</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">加強防滑紋路</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">深溝抓地紋</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">建議適合</div>
+        <div class="compare-cell" data-model="LAMTOR-1">所有人</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">想要有質感的所有人</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">長輩</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">台灣製造</div>
+        <div class="compare-cell" data-model="LAMTOR-1">✓</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">✓</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">✓</div>
+      </div>
+      <!-- these six rows are identical across all three columns on
+           purpose — they used to be their own "Tech Specs" section,
+           folded in here so the joke lands the same way 台灣製造
+           already does: three separate products, zero actual
+           differences in the specs that would matter -->
+      <div class="compare-row">
+        <div class="compare-label">材質</div>
+        <div class="compare-cell" data-model="LAMTOR-1">EVA 發泡塑膠</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">EVA 發泡塑膠</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">EVA 發泡塑膠</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">永續指數</div>
+        <div class="compare-cell" data-model="LAMTOR-1">未知</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">未知</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">未知</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">碳足跡</div>
+        <div class="compare-cell" data-model="LAMTOR-1">比你想的還持久*</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">比你想的還持久*</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">比你想的還持久*</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">Power draw</div>
+        <div class="compare-cell" data-model="LAMTOR-1">0W</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">0W</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">0W</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">Battery</div>
+        <div class="compare-cell" data-model="LAMTOR-1">不需要，它是拖鞋</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">不需要，它是拖鞋</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">不需要，它是拖鞋</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">Uptime</div>
+        <div class="compare-cell" data-model="LAMTOR-1">自 1990 年代至今，從未關機</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">自 1990 年代至今，從未關機</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">自 1990 年代至今，從未關機</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">連接性</div>
+        <div class="compare-cell" data-model="LAMTOR-1">無</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">無</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">無</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">配對</div>
+        <div class="compare-cell" data-model="LAMTOR-1">不需要</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">不需要</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">不需要</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">韌體更新</div>
+        <div class="compare-cell" data-model="LAMTOR-1">從不，也不需要</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">從不，也不需要</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">從不，也不需要</div>
+      </div>
+      <div class="compare-row">
+        <div class="compare-label">支援穿法</div>
+        <div class="compare-cell" data-model="LAMTOR-1">12 種以上，含「阿嬤穿法」</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Plus">12 種以上，含「阿嬤穿法」</div>
+        <div class="compare-cell" data-model="LAMTOR-1 Pro">12 種以上，含「阿嬤穿法」</div>
+      </div>
+    </div>
+    <p class="compare-footnote">
+      * 這雙拖鞋不會分解，它只會，在你家鞋櫃底層，永遠存在
+    </p>
+  </div>
+</section>
+
+<!-- fake paper — the reveal that the whole site has been building an
+     "open-weight foundation model" bit the entire time -->
+<section class="feature-section" data-nav-theme="light">
+  <div class="paper-section">
+    <div class="paper-arxiv-id">arXiv:0000.00000 [cs.RO] — Submitted 2026</div>
+    <h2 class="paper-title">LAMTOR-1: An Open-Weight Foundation Model for Taiwanese Slip-on Footwear</h2>
+    <p class="paper-authors">UX CIRCLES</p>
+    <p class="paper-abstract-label">Abstract</p>
+    <p class="paper-abstract-body">
+      本研究提出 LAMTOR-1，一個開源、零成本、在無監督環境（騎樓）下訓練完成的拖鞋基礎模型，
+      實驗顯示其在濕滑瓷磚環境下展現高度穩健性，且無需任何形式的韌體更新
+    </p>
+    <div class="paper-links">
+      <span class="paper-link">GitHub: lamtor-1</span>
+      <span class="paper-link">Paper: arXiv:0000.00000</span>
+      <span class="paper-link">Checkpoint: lamtor-1-pro-max.safetensors</span>
+    </div>
+    <p class="paper-bibtex-label">Cite this work</p>
+    <div class="paper-bibtex-wrap">
+      <button class="paper-copy-btn" id="bibtexCopyBtn" type="button">Copy</button>
+      <pre class="paper-bibtex" id="bibtexBlock">@misc{lamtor2026,
+  title={LAMTOR-1: An Open-Weight Model of
+         Taiwanese Slip-on Footwear},
+  author={UX CIRCLES},
+  year={2026},
+  note={Trained entirely on 騎樓, no GPU required}
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- peer review — Dcard/LocalLLaMA-style comment thread reacting to
+     the "paper" above -->
+<section class="feature-section is-dark" data-nav-theme="dark">
+  <div class="peer-review-section">
+    <div class="feature-eyebrow">Community Discussion</div>
+    <h2 class="feature-title">同儕怎麼說</h2>
+    <div class="peer-comment-list">
+      <div class="peer-comment">
+        <p class="peer-comment-author">Dcard 匿名鄉民</p>
+        <p class="peer-comment-body">這篇論文比我論文口委還嚴格</p>
+      </div>
+      <div class="peer-comment">
+        <p class="peer-comment-author">匿名鄉民</p>
+        <p class="peer-comment-body">防滑係數 42.6% 到底怎麼算出來的？</p>
+      </div>
+      <div class="peer-comment">
+        <p class="peer-comment-author">匿名鄉民</p>
+        <p class="peer-comment-body">我阿嬤看了說這什麼鬼，但她還是穿了 20 年</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LAMTOR-1 Air — moved down to a "coming soon" teaser right
+     before the closing brand beat -->
+<section class="feature-section is-dark bg-charcoal air-feature" data-nav-theme="dark">
+  <div class="air-section">
+    <div class="air-section-copy">
+      <div class="feature-eyebrow">Coming Soon · LAMTOR-1 Air</div>
+      <h2 class="feature-title">薄到，你會懷疑自己有沒有穿鞋</h2>
+      <p class="feature-body">
+        比標準版薄了 0.3 公分，你可能感覺不出來，但你阿嬤會說「這雙是不是被你踩壞了」，
+        更輕的重量，是為了讓你走得更快，尤其是垃圾車來的時候
+      </p>
+    </div>
+    <div class="air-section-figure">
+      <img src="assets/props/lamtor-air.webp" alt="LAMTOR-1 Air 側面剖面圖">
+    </div>
+  </div>
+</section>
+
+<!-- closing CTA — brand reveal, the one quiet beat on the whole page -->
+<section class="feature-section is-dark" data-nav-theme="dark">
+  <div class="closing-section">
+    <p class="closing-line">
+      我們用一雙台灣傳統藍白拖，抓住了你 3 分鐘的注意力<br>
+      想像看看，我們能為你的品牌做什麼
+    </p>
+    <p class="closing-signoff">
+      UX CIRCLES<br>
+      <a href="mailto:hello@ux-circles.com">hello@ux-circles.com</a>
+    </p>
+  </div>
+</section>
+
+
+<!-- floating name+Buy strip — appears once .product-grid has scrolled
+     out of view above the viewport, so you don't lose track of which
+     model you were looking at (or lose the Buy button) while reading
+     further down. columns line up with the real grid via the same
+     max-width/gap, so each name sits directly above its card's
+     original position. -->
+<div class="product-float-bar" id="productFloatBar" aria-hidden="true">
+  <div class="product-float-bar-inner">
+    <div class="product-float-item">
+      <span class="product-float-name">LAMTOR-1</span>
+      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+    </div>
+    <div class="product-float-item">
+      <span class="product-float-name">LAMTOR-1 Plus</span>
+      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+    </div>
+    <div class="product-float-item">
+      <span class="product-float-name">LAMTOR-1 Pro</span>
+      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+    </div>
+  </div>
 </div>
 
 <div class="cursor-dot" id="cursorDot"></div>
@@ -2187,19 +3864,224 @@
       requestAnimationFrame(transitionTick);
     }
 
-    // always start from the top on load — the entrance animation and
-    // the scroll-driven exit assume a fresh start, so the browser's
-    // default "restore scroll position on refresh" would drop you into
-    // a half-finished transition state
-    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-    window.scrollTo(0, 0);
-
     window.addEventListener('scroll', wakeTransition, { passive: true });
     applyProgress(0, 0, 0);
 
     titleBlock.addEventListener('click', () => {
       if (!titleBlock.classList.contains('is-logo')) return;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  })();
+
+  // nav color scrollspy — the fixed nav/wordmark now persist over the
+  // entire page, so they need to flip between cream (over dark/photo
+  // sections) and ink (over the light product/stat/grip sections)
+  // as they're scrolled past. detects "which section is currently
+  // under the nav" via a 1px-tall IntersectionObserver trigger line
+  // positioned just below the nav, rather than computing this on every
+  // scroll event by hand.
+  (function () {
+    const targets = document.querySelectorAll('[data-nav-theme]');
+    if (!targets.length) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          document.body.dataset.navTheme = entry.target.dataset.navTheme;
+        }
+      });
+    }, { rootMargin: '-72px 0px -100% 0px', threshold: 0 });
+    targets.forEach((el) => observer.observe(el));
+  })();
+
+  // floating name+Buy strip — shown once .product-grid has scrolled
+  // above the viewport (not just "isn't intersecting", which is also
+  // true before you've scrolled down to it yet), hidden again if you
+  // scroll back up to the grid OR if you scroll all the way past the
+  // rest of #product (grid + compare table) — there's nothing left to
+  // buy once you're reading about the balcony/arcade scene further down.
+  (function () {
+    const grid = document.querySelector('.product-grid');
+    const section = document.getElementById('product');
+    const bar = document.getElementById('productFloatBar');
+    if (!grid || !section || !bar) return;
+
+    let pastGridTop = false;
+    let stillInSection = true;
+
+    function update() {
+      bar.classList.toggle('is-visible', pastGridTop && stillInSection);
+    }
+
+    const gridObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        pastGridTop = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+        update();
+      });
+    }, { rootMargin: '-72px 0px 0px 0px', threshold: 0 });
+    gridObserver.observe(grid);
+
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const scrolledFullyPast = !entry.isIntersecting && entry.boundingClientRect.bottom < 72;
+        stillInSection = !scrolledFullyPast;
+        update();
+      });
+    }, { rootMargin: '-72px 0px 0px 0px', threshold: 0 });
+    sectionObserver.observe(section);
+  })();
+
+  // "Cite this work" copy button on the fake-paper section
+  (function () {
+    const btn = document.getElementById('bibtexCopyBtn');
+    const block = document.getElementById('bibtexBlock');
+    if (!btn || !block) return;
+    btn.addEventListener('click', () => {
+      navigator.clipboard.writeText(block.textContent).then(() => {
+        btn.textContent = 'Copied';
+        btn.classList.add('is-copied');
+        setTimeout(() => {
+          btn.textContent = 'Copy';
+          btn.classList.remove('is-copied');
+        }, 1600);
+      });
+    });
+  })();
+
+  // Pro-hero image: gentle zoom-in on entry + scroll parallax (drifts
+  // up as you scroll through the section). the image is kept larger
+  // than its clipped box at all times, and the translate stays well
+  // inside that overflow budget, so the cutout's edges never expose the
+  // black behind it. rAF-guarded so scroll stays smooth.
+  (function () {
+    const section = document.querySelector('.pro-hero');
+    const img = section && section.querySelector('.pro-hero-figure img');
+    if (!img) return;
+    let ticking = false;
+    function apply() {
+      ticking = false;
+      const rect = section.getBoundingClientRect();
+      const vh = window.innerHeight;
+      // 0 as the section starts entering from the bottom, 1 as it fully
+      // leaves past the top
+      const p = Math.min(1, Math.max(0, (vh - rect.top) / (rect.height + vh)));
+      // scale grows from exactly 1 (no crop at the top of the section)
+      // up to 1.18 as you scroll down — clearly visible "照片變大". with
+      // origin at the top edge this growth is all downward, so the shoe
+      // top never crops.
+      const scale = 1 + 0.18 * p;
+      // parallax lag: image trails DOWNward relative to its frame as you
+      // scroll, 0 -> +6%. positive shift only sinks the top edge lower
+      // (black gap above the shoe, never a crop), so the shoe top is
+      // safe regardless of magnitude.
+      const shift = 6 * p;
+      img.style.transform = `scale(${scale.toFixed(4)}) translateY(${shift.toFixed(3)}%)`;
+    }
+    function onScroll() {
+      if (!ticking) { ticking = true; requestAnimationFrame(apply); }
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    apply();
+  })();
+
+  // Pro-hero caption: split into per-character spans and blur-fade them
+  // in one by one, triggered once the caption scrolls near the viewport
+  (function () {
+    const caption = document.querySelector('.pro-hero-caption');
+    if (!caption) return;
+    const text = caption.textContent.trim();
+    caption.textContent = '';
+    Array.from(text).forEach((chr, i) => {
+      const span = document.createElement('span');
+      span.className = 'ch';
+      // keep spaces from collapsing so layout is preserved
+      span.textContent = chr === ' ' ? ' ' : chr;
+      span.style.transitionDelay = (i * 0.045).toFixed(3) + 's';
+      caption.appendChild(span);
+    });
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          caption.classList.add('is-revealed');
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '0px 0px -12% 0px', threshold: 0.2 });
+    observer.observe(caption);
+  })();
+
+  // Pro-hero title: sweep the LAMTOR-1 eyebrow + PRO wordmark into view
+  // with the gradient mask (CSS) once the section first enters
+  (function () {
+    const section = document.querySelector('.pro-hero');
+    if (!section) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          section.classList.add('is-revealed');
+          observer.disconnect();
+        }
+      });
+    }, { rootMargin: '0px 0px -20% 0px', threshold: 0 });
+    observer.observe(section);
+  })();
+
+  // 42.6% stat: count up from 0 to the target once it scrolls into view
+  (function () {
+    const el = document.querySelector('.stat-num-value');
+    if (!el) return;
+    const target = parseFloat(el.dataset.target);
+    const decimals = (el.dataset.target.split('.')[1] || '').length;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        observer.disconnect();
+        const dur = 1300;
+        const start = performance.now();
+        function tick(now) {
+          const t = Math.min(1, (now - start) / dur);
+          const eased = 1 - Math.pow(1 - t, 3); // ease-out
+          el.textContent = (target * eased).toFixed(decimals);
+          if (t < 1) requestAnimationFrame(tick);
+          else el.textContent = target.toFixed(decimals);
+        }
+        requestAnimationFrame(tick);
+      });
+    }, { threshold: 0.5 });
+    observer.observe(el);
+  })();
+
+  // product lineup color switcher — each card tracks its own selected
+  // color independently via data-color on the card itself, which the
+  // CSS hue-rotate rules key off of. the color-name label also slides
+  // to sit under whichever swatch is currently active.
+  (function () {
+    const colorNames = { blue: '青天藍', red: '滿地紅', green: '祖母綠' };
+    document.querySelectorAll('.product-card-swatches').forEach((wrap) => {
+      const card = wrap.closest('.product-card');
+      const swatches = wrap.querySelectorAll('.product-swatch');
+      const nameEl = wrap.querySelector('.product-card-colorname');
+
+      function movePill(swatch) {
+        const wrapRect = wrap.getBoundingClientRect();
+        const swatchRect = swatch.getBoundingClientRect();
+        nameEl.style.left = (swatchRect.left + swatchRect.width / 2 - wrapRect.left) + 'px';
+      }
+
+      swatches.forEach((swatch) => {
+        swatch.addEventListener('click', () => {
+          const color = swatch.dataset.color;
+          card.dataset.color = color;
+          nameEl.textContent = colorNames[color] || '';
+          swatches.forEach((s) => s.classList.toggle('is-active', s === swatch));
+          movePill(swatch);
+        });
+      });
+
+      // land the pill under whichever swatch starts active, instead of
+      // defaulting to the left edge until the first click
+      const initial = wrap.querySelector('.product-swatch.is-active') || swatches[0];
+      if (initial) movePill(initial);
     });
   })();
 </script>
