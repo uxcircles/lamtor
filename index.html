@@ -1967,6 +1967,97 @@
     opacity: 0.6;
   }
 
+  /* ---- interactive bits shared across the three "fake system UI"
+     sections (encryption / edge / legacy) ---- */
+
+  /* encryption: decrypt button + failing result */
+  .decrypt-box {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  .decrypt-btn {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    color: var(--cream);
+    background: rgba(255, 237, 215, 0.08);
+    border: 1px solid rgba(255, 237, 215, 0.3);
+    border-radius: 8px;
+    padding: 9px 18px;
+    cursor: pointer;
+    transition: background 0.15s ease;
+  }
+  .decrypt-btn:hover { background: rgba(255, 237, 215, 0.16); }
+  .decrypt-btn:disabled { opacity: 0.55; cursor: default; }
+
+  .decrypt-result {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: #e88a7a;
+  }
+
+  /* edge: fake terminal ping test */
+  .terminal {
+    margin-top: 26px;
+    max-width: 520px;
+    background: #0c0c0e;
+    border: 1px solid rgba(255, 237, 215, 0.14);
+    border-radius: 10px;
+    padding: 18px 20px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.75;
+    color: #cfe8cf;
+    min-height: 200px;
+  }
+  .terminal .term-dim { color: rgba(207, 232, 207, 0.5); }
+  .terminal .term-warn { color: #e8b84b; }
+  .terminal .term-ok { color: #8fd6a8; }
+  .terminal .term-cursor {
+    animation: termBlink 1s steps(1) infinite;
+  }
+  @keyframes termBlink { 50% { opacity: 0; } }
+
+  /* legacy: auto-ticking compatibility checklist */
+  .compat-list {
+    list-style: none;
+    margin: 26px 0 0;
+    padding: 0;
+    max-width: 480px;
+  }
+  .compat-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px dashed rgba(255, 237, 215, 0.16);
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .compat-list li.is-shown { opacity: 1; transform: none; }
+  .compat-item { font-size: 14px; color: rgba(255, 237, 215, 0.82); }
+  .compat-status {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 13px;
+    color: #8fd6a8;
+    white-space: nowrap;
+  }
+  .compat-total {
+    margin-top: 18px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 15px;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  .compat-total.is-shown { opacity: 1; }
+  .compat-total span { color: #8fd6a8; font-weight: 700; }
+
   /* ---- drop/vibration test: two stats side by side, same pattern as
      .stat-section's big-number-plus-caption but twinned ---- */
   .test-section {
@@ -2070,24 +2161,50 @@
     margin: 0 auto;
   }
 
-  .testimonial-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+  /* full-bleed track the sliding row lives in — clips the overflowing
+     row so it can be translated horizontally on scroll */
+  .testimonial-viewport {
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
     margin-top: 48px;
+    overflow: hidden;
+  }
+
+  /* auto-scrolling marquee: JS duplicates the card set so the row is two
+     identical halves; the animation slides it one full half (-50%) and
+     loops seamlessly. margin-right (not flex gap) so every card incl.
+     the last carries its spacing — otherwise the -50% wrap would be off
+     by half a gap and jump. */
+  .testimonial-grid {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+    animation: testimonialMarquee 30s linear infinite;
+  }
+
+  @keyframes testimonialMarquee {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+  }
+
+  /* pause while hovered so people can actually read one */
+  .testimonial-viewport:hover .testimonial-grid {
+    animation-play-state: paused;
   }
 
   .testimonial-card {
+    flex: 0 0 clamp(240px, 24vw, 320px);
+    margin-right: 24px;
     border: 1px solid rgba(10, 10, 10, 0.12);
     border-radius: 16px;
     padding: 28px 24px;
   }
 
-  /* the 4th/5th cards span 1.5 columns each on the 2-row tail so five
-     cards don't leave one lonely orphan in a 3-column grid */
-  .testimonial-grid .testimonial-card:nth-child(4),
-  .testimonial-grid .testimonial-card:nth-child(5) {
-    grid-column: span 1;
+  .testimonial-stars {
+    color: #e8b84b;
+    font-size: 14px;
+    letter-spacing: 3px;
+    margin-bottom: 14px;
   }
 
   .testimonial-quote {
@@ -2113,14 +2230,6 @@
     background: rgba(10, 10, 10, 0.3);
     margin-right: 8px;
     vertical-align: middle;
-  }
-
-  @media (max-width: 860px) {
-    .testimonial-grid { grid-template-columns: 1fr 1fr; }
-  }
-
-  @media (max-width: 600px) {
-    .testimonial-grid { grid-template-columns: 1fr; }
   }
 
   /* ---- fake paper: the only serif moment on the whole page, on
@@ -2277,11 +2386,42 @@
     margin: 0 0 48px;
   }
 
+  /* each line mists in (blur -> sharp) on its own, one after the other,
+     once the closing scrolls into view — slow and quiet to match the
+     final beat */
+  .closing-line .cl-line {
+    display: block;
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(10px);
+    transition: opacity 0.95s ease, filter 0.95s ease, transform 0.95s ease;
+  }
+
+  .closing-section.is-revealed .cl-line {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  .closing-section.is-revealed .cl-line:nth-child(2) { transition-delay: 0.4s; }
+  .closing-section.is-revealed .cl-line:nth-child(3) { transition-delay: 0.8s; }
+
   .closing-signoff {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 13px;
     letter-spacing: 0.1em;
+    /* opened up so the name and the email don't sit on top of each
+       other */
+    line-height: 2.4;
     color: rgba(255, 237, 215, 0.6);
+    opacity: 0;
+    filter: blur(8px);
+    transition: opacity 0.9s ease 1.25s, filter 0.9s ease 1.25s;
+  }
+
+  .closing-section.is-revealed .closing-signoff {
+    opacity: 1;
+    filter: blur(0);
   }
 
   .closing-signoff a {
@@ -2721,6 +2861,18 @@
   </div>
 </section>
 
+<!-- Plus hero — same treatment as Pro, for the woven-mesh model -->
+<section class="pro-hero" data-nav-theme="dark">
+  <p class="pro-hero-eyebrow">LAMTOR-1</p>
+  <h2 class="pro-hero-word">PLUS</h2>
+  <div class="pro-hero-figure">
+    <img src="assets/props/plus.webp" alt="LAMTOR-1 Plus 菱格編織透明鞋面特寫">
+    <p class="pro-hero-caption">
+      透明菱格編織鞋面，三層配色大底，菜市場走一圈，鄰居都問你在哪買的
+    </p>
+  </div>
+</section>
+
 <!-- fake stat, styled to echo oryzo's "37.9% More Circular" callout —
      a suspiciously precise number with a straight-faced footnote doing
      the joke's actual work -->
@@ -2789,11 +2941,15 @@
     </svg>
     <div>
       <div class="feature-eyebrow">Zero-ID Wear Encryption</div>
-      <h2 class="feature-title">正反不分，是一種加密技術</h2>
+      <h2 class="feature-title decode-target" data-text="左右不分，是一種加密技術">左右不分，是一種加密技術</h2>
       <p class="feature-body">
         LAMTOR-1 採用「零辨識穿法加密」技術，穿反了？沒人看得出來，包括你自己，
         這不是設計缺陷，這是隱私功能
       </p>
+      <div class="decrypt-box">
+        <button class="decrypt-btn" type="button">🔒 嘗試解密穿法</button>
+        <span class="decrypt-result" aria-live="polite"></span>
+      </div>
     </div>
   </div>
 </section>
@@ -2813,7 +2969,7 @@
         它只在騎樓、陽台、與客廳和房間之間的那條地板線上運行，
         不上傳、不同步、不備份
       </p>
-      <p class="edge-footer">延遲：0ms，因為它從不連線</p>
+      <div class="terminal" id="edgeTerminal" aria-label="與雲端的連線測試"></div>
     </div>
   </div>
 </section>
@@ -2833,6 +2989,13 @@
         LAMTOR-1 與阿公阿嬤時代的所有地板、所有拖鞋放置習慣、
         以及「進門要脫鞋」的所有家規，全面相容
       </p>
+      <ul class="compat-list" id="compatList">
+        <li><span class="compat-item">阿公阿嬤時代的磨石子地</span><span class="compat-status">✓ 相容</span></li>
+        <li><span class="compat-item">拜拜、玄關擺放習慣</span><span class="compat-status">✓ 相容</span></li>
+        <li><span class="compat-item">「進門要脫鞋」家規</span><span class="compat-status">✓ 相容</span></li>
+        <li><span class="compat-item">1990 年代至今所有地板</span><span class="compat-status">✓ 相容</span></li>
+      </ul>
+      <div class="compat-total">相容性：<span>100%</span></div>
     </div>
   </div>
 </section>
@@ -2871,24 +3034,33 @@
   <div class="testimonial-section">
     <div class="feature-eyebrow">What People Are Saying</div>
     <h2 class="feature-title">來自各行各業的信任</h2>
-    <div class="testimonial-grid">
+  </div>
+  <!-- the row is wider than the viewport and slides right as you scroll
+       down through the section (JS translateX) -->
+  <div class="testimonial-viewport">
+    <div class="testimonial-grid" id="testimonialRow">
       <div class="testimonial-card">
+        <div class="testimonial-stars" aria-label="5 顆星">★★★★★</div>
         <p class="testimonial-quote">穿過最好的一雙</p>
         <p class="testimonial-attribution">巷口里長</p>
       </div>
       <div class="testimonial-card">
+        <div class="testimonial-stars" aria-label="5 顆星">★★★★★</div>
         <p class="testimonial-quote">魚市場濕滑地板的救星</p>
         <p class="testimonial-attribution">傳統市場魚販</p>
       </div>
       <div class="testimonial-card">
+        <div class="testimonial-stars" aria-label="5 顆星">★★★★★</div>
         <p class="testimonial-quote">我這攤位站了 15 年，膝蓋都靠它</p>
         <p class="testimonial-attribution">夜市烤香腸老闆</p>
       </div>
       <div class="testimonial-card">
+        <div class="testimonial-stars" aria-label="5 顆星">★★★★★</div>
         <p class="testimonial-quote">客人牽車來修，我看他鞋就知道他內行</p>
         <p class="testimonial-attribution">機車行老闆</p>
       </div>
       <div class="testimonial-card">
+        <div class="testimonial-stars" aria-label="5 顆星">★★★★★</div>
         <p class="testimonial-quote">候診三小時，腳最舒服的就是這雙</p>
         <p class="testimonial-attribution">醫院候診區阿姨</p>
       </div>
@@ -3143,11 +3315,12 @@
 <section class="feature-section is-dark" data-nav-theme="dark">
   <div class="closing-section">
     <p class="closing-line">
-      我們用一雙台灣傳統藍白拖，抓住了你 3 分鐘的注意力<br>
-      想像看看，我們能為你的品牌做什麼
+      <span class="cl-line">我們用一雙台灣傳統藍白拖</span>
+      <span class="cl-line">抓住了你 3 分鐘的注意力</span>
+      <span class="cl-line">想像看看，我們能為你的品牌做什麼</span>
     </p>
     <p class="closing-signoff">
-      UX CIRCLES<br>
+      Reimagined by UX CIRCLES<br>
       <a href="mailto:hello@ux-circles.com">hello@ux-circles.com</a>
     </p>
   </div>
@@ -3953,14 +4126,15 @@
   // inside that overflow budget, so the cutout's edges never expose the
   // black behind it. rAF-guarded so scroll stays smooth.
   (function () {
-    const section = document.querySelector('.pro-hero');
-    const img = section && section.querySelector('.pro-hero-figure img');
-    if (!img) return;
+    const imgs = Array.from(document.querySelectorAll('.pro-hero .pro-hero-figure img'));
+    if (!imgs.length) return;
     let ticking = false;
     function apply() {
       ticking = false;
-      const rect = section.getBoundingClientRect();
       const vh = window.innerHeight;
+      imgs.forEach((img) => {
+      const section = img.closest('.pro-hero');
+      const rect = section.getBoundingClientRect();
       // 0 as the section starts entering from the bottom, 1 as it fully
       // leaves past the top
       const p = Math.min(1, Math.max(0, (vh - rect.top) / (rect.height + vh)));
@@ -3975,6 +4149,7 @@
       // safe regardless of magnitude.
       const shift = 6 * p;
       img.style.transform = `scale(${scale.toFixed(4)}) translateY(${shift.toFixed(3)}%)`;
+      });
     }
     function onScroll() {
       if (!ticking) { ticking = true; requestAnimationFrame(apply); }
@@ -3986,9 +4161,7 @@
 
   // Pro-hero caption: split into per-character spans and blur-fade them
   // in one by one, triggered once the caption scrolls near the viewport
-  (function () {
-    const caption = document.querySelector('.pro-hero-caption');
-    if (!caption) return;
+  document.querySelectorAll('.pro-hero-caption').forEach((caption) => {
     const text = caption.textContent.trim();
     caption.textContent = '';
     Array.from(text).forEach((chr, i) => {
@@ -4008,13 +4181,11 @@
       });
     }, { rootMargin: '0px 0px -12% 0px', threshold: 0.2 });
     observer.observe(caption);
-  })();
+  });
 
   // Pro-hero title: sweep the LAMTOR-1 eyebrow + PRO wordmark into view
   // with the gradient mask (CSS) once the section first enters
-  (function () {
-    const section = document.querySelector('.pro-hero');
-    if (!section) return;
+  document.querySelectorAll('.pro-hero').forEach((section) => {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -4024,7 +4195,7 @@
       });
     }, { rootMargin: '0px 0px -20% 0px', threshold: 0 });
     observer.observe(section);
-  })();
+  });
 
   // 42.6% stat: count up from 0 to the target once it scrolls into view
   (function () {
@@ -4049,6 +4220,129 @@
       });
     }, { threshold: 0.5 });
     observer.observe(el);
+  })();
+
+  // testimonials: duplicate the card set so the CSS marquee animation
+  // (translateX -50% -> 0) loops seamlessly — the second half is a copy
+  // that sits exactly where the first half started
+  (function () {
+    const row = document.getElementById('testimonialRow');
+    if (!row) return;
+    const originals = Array.from(row.children);
+    originals.forEach((card) => {
+      const clone = card.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      row.appendChild(clone);
+    });
+  })();
+
+  // small helper: run a callback once, the first time an element scrolls
+  // into view — used by the three "fake system UI" section interactions
+  function onFirstInView(el, cb, threshold) {
+    if (!el) return;
+    const obs = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) { obs.disconnect(); cb(); }
+      });
+    }, { threshold: threshold || 0.35 });
+    obs.observe(el);
+  }
+
+  // encryption: scramble-then-decode the title, plus a "解密穿法" button
+  // whose fake decryption always fails
+  (function () {
+    const CIPHER = '密碼加解正反穿法零辨識電子訊號#※@※▓█01';
+    const target = document.querySelector('.decode-target');
+    if (target) {
+      const real = target.dataset.text;
+      const chars = Array.from(real);
+      onFirstInView(target, () => {
+        let frame = 0;
+        (function tick() {
+          const revealed = Math.floor(frame / 3);
+          target.textContent = chars.map((c, i) => {
+            if (i < revealed || c === '，') return c;
+            return CIPHER[Math.floor(Math.random() * CIPHER.length)];
+          }).join('');
+          frame++;
+          if (revealed <= chars.length) requestAnimationFrame(tick);
+          else target.textContent = real;
+        })();
+      });
+    }
+    const btn = document.querySelector('.decrypt-btn');
+    const result = document.querySelector('.decrypt-result');
+    if (btn && result) {
+      btn.addEventListener('click', () => {
+        btn.disabled = true;
+        let dots = 0;
+        result.style.color = '';
+        result.textContent = '解密中';
+        const iv = setInterval(() => {
+          dots = (dots + 1) % 4;
+          result.textContent = '解密中' + '.'.repeat(dots);
+        }, 300);
+        setTimeout(() => {
+          clearInterval(iv);
+          result.textContent = '辨識失敗：左右不明';
+          btn.disabled = false;
+        }, 1900);
+      });
+    }
+  })();
+
+  // edge: type out a fake ping-the-cloud test that never connects
+  (function () {
+    const term = document.getElementById('edgeTerminal');
+    if (!term) return;
+    const lines = [
+      ['$ ping cloud.lamtor.ai', ''],
+      ['PING cloud.lamtor.ai (0.0.0.0): 56 data bytes', 'term-dim'],
+      ['Request timed out.', 'term-warn'],
+      ['Request timed out.', 'term-warn'],
+      ['Request timed out.', 'term-warn'],
+      ['--- cloud.lamtor.ai ping statistics ---', 'term-dim'],
+      ['3 packets transmitted, 0 received, 100% packet loss', 'term-dim'],
+      ['Latency: 0ms（從未連線）', 'term-ok'],
+    ];
+    onFirstInView(term, () => {
+      let i = 0;
+      (function next() {
+        if (i >= lines.length) {
+          const cur = document.createElement('span');
+          cur.className = 'term-cursor';
+          cur.textContent = '▋';
+          term.appendChild(cur);
+          return;
+        }
+        const div = document.createElement('div');
+        div.className = 'term-line ' + (lines[i][1] || '');
+        div.textContent = lines[i][0];
+        term.appendChild(div);
+        i++;
+        setTimeout(next, 380 + Math.random() * 260);
+      })();
+    }, 0.3);
+  })();
+
+  // legacy: tick the compatibility checklist items one by one, then 100%
+  (function () {
+    const list = document.getElementById('compatList');
+    if (!list) return;
+    const items = Array.from(list.children);
+    const total = document.querySelector('.compat-total');
+    onFirstInView(list, () => {
+      items.forEach((li, i) => {
+        setTimeout(() => li.classList.add('is-shown'), i * 420);
+      });
+      setTimeout(() => total && total.classList.add('is-shown'), items.length * 420 + 250);
+    }, 0.3);
+  })();
+
+  // closing: mist the sign-off lines in when the final beat scrolls up
+  (function () {
+    const closing = document.querySelector('.closing-section');
+    onFirstInView(closing, () => closing.classList.add('is-revealed'), 0.25);
   })();
 
   // product lineup color switcher — each card tracks its own selected
