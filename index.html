@@ -1790,6 +1790,139 @@
 
   .is-dark .feature-body { color: rgba(255, 237, 215, 0.75); }
 
+  /* generic "mist rise" entrance reused across every ordinary
+     feature-section's headline copy: eyebrow, then title, then body,
+     each fading up out of a blur with a short stagger, once the
+     section first scrolls into view (.is-revealed added by JS below).
+     sections with their own bespoke reveal for these SAME elements —
+     Pro/Plus hero, the closing CTA, and the encryption title's
+     scramble-decode — are left alone: the encryption title is excluded
+     by :not(.decode-target), Pro/Plus/closing use different class names
+     entirely. The second tier below extends this to each section's
+     supporting content (icons, buttons, stat blocks, the testimonial
+     row, the paper's cite block, peer comments); the grip cards,
+     terminal, and compatibility checklist keep their own richer
+     bespoke reveals untouched. */
+  .feature-section .feature-eyebrow,
+  .feature-section .feature-title:not(.decode-target),
+  .feature-section .feature-body,
+  .feature-section .paper-arxiv-id,
+  .feature-section .paper-title,
+  .feature-section .paper-authors {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+    transition: opacity 0.9s ease, filter 0.9s ease, transform 0.9s ease;
+  }
+
+  .feature-section.is-revealed .feature-eyebrow,
+  .feature-section.is-revealed .feature-title:not(.decode-target),
+  .feature-section.is-revealed .feature-body,
+  .feature-section.is-revealed .paper-arxiv-id,
+  .feature-section.is-revealed .paper-title,
+  .feature-section.is-revealed .paper-authors {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  .feature-section.is-revealed .feature-title,
+  .feature-section.is-revealed .paper-title {
+    transition-delay: 0.12s;
+  }
+  .feature-section.is-revealed .feature-body,
+  .feature-section.is-revealed .paper-authors {
+    transition-delay: 0.24s;
+  }
+
+  /* the encryption title has its own scramble-decode reveal instead of
+     the plain mist-rise above: it stays hidden/blurred until JS adds
+     .is-decoding (at the same moment the scramble animation starts), so
+     the delay before it appears is actually visible instead of the text
+     just sitting there fully-formed the whole time */
+  .feature-title.decode-target {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+    transition: opacity 0.6s ease, filter 0.6s ease, transform 0.6s ease;
+  }
+  .feature-title.decode-target.is-decoding {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  /* second tier: each section's supporting content, arriving after the
+     headline copy above rather than all at once */
+  .feature-section .feature-icon,
+  .feature-section .decrypt-box,
+  .feature-section .test-stats,
+  .feature-section .test-punchline--overlay,
+  .feature-section .testimonial-viewport,
+  .feature-section .paper-abstract-label,
+  .feature-section .paper-abstract-body,
+  .feature-section .paper-bibtex-label,
+  .feature-section .paper-bibtex-wrap,
+  .feature-section .peer-comment,
+  .feature-section .stat-footnote,
+  .feature-section .grip-badge,
+  .feature-section .terminal {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+    transition: opacity 0.9s ease, filter 0.9s ease, transform 0.9s ease;
+  }
+
+  .feature-section.is-revealed .feature-icon,
+  .feature-section.is-revealed .decrypt-box,
+  .feature-section.is-revealed .test-stats,
+  .feature-section.is-revealed .test-punchline--overlay,
+  .feature-section.is-revealed .testimonial-viewport,
+  .feature-section.is-revealed .paper-abstract-label,
+  .feature-section.is-revealed .paper-abstract-body,
+  .feature-section.is-revealed .paper-bibtex-label,
+  .feature-section.is-revealed .paper-bibtex-wrap,
+  .feature-section.is-revealed .peer-comment,
+  .feature-section.is-revealed .stat-footnote,
+  .feature-section.is-revealed .grip-badge,
+  .feature-section.is-revealed .terminal {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+
+  /* icon leads alongside the eyebrow, since it's the section's first
+     visual beat rather than trailing content */
+  .feature-section.is-revealed .feature-icon { transition-delay: 0s; }
+
+  .feature-section.is-revealed .decrypt-box,
+  .feature-section.is-revealed .test-stats,
+  .feature-section.is-revealed .testimonial-viewport,
+  .feature-section.is-revealed .paper-abstract-label,
+  .feature-section.is-revealed .paper-abstract-body,
+  .feature-section.is-revealed .terminal {
+    transition-delay: 0.36s;
+  }
+
+  .feature-section.is-revealed .test-punchline--overlay,
+  .feature-section.is-revealed .paper-bibtex-label,
+  .feature-section.is-revealed .paper-bibtex-wrap,
+  .feature-section.is-revealed .stat-footnote {
+    transition-delay: 0.48s;
+  }
+
+  /* peer comments arrive one after another rather than all together,
+     like a thread loading in */
+  .feature-section.is-revealed .peer-comment:nth-child(1) { transition-delay: 0.3s; }
+  .feature-section.is-revealed .peer-comment:nth-child(2) { transition-delay: 0.45s; }
+  .feature-section.is-revealed .peer-comment:nth-child(3) { transition-delay: 0.6s; }
+
+  /* the three grip cards arrive left-to-right after the section's own
+     eyebrow/title/body copy has landed */
+  .feature-section.is-revealed .grip-badge:nth-child(1) { transition-delay: 0.36s; }
+  .feature-section.is-revealed .grip-badge:nth-child(2) { transition-delay: 0.48s; }
+  .feature-section.is-revealed .grip-badge:nth-child(3) { transition-delay: 0.6s; }
+
   /* ---- Air feature: text pinned to the left padding, image bleeding
      all the way to the viewport's right edge (not just the section's
      max-width) — this section overrides .feature-section's padding
@@ -1909,7 +2042,50 @@
   .grip-section {
     max-width: 1100px;
     margin: 0 auto;
+    position: relative;
+    z-index: 1;
   }
+
+  /* full-bleed scene photo behind the whole section, swapped by hovering
+     a badge below. section must be a stacking context (position:relative
+     on .grip-feature) so this can sit at z-index 0 under the copy
+     (.grip-section is z-index 1) and under the cards, which then use
+     backdrop-filter to read it through as frosted glass. */
+  .grip-feature {
+    position: relative;
+    overflow: hidden;
+    /* taller than the default section padding so the full-bleed hover
+       photo has more room to breathe above/below the (now shorter)
+       card grid, instead of the cards covering most of the frame */
+    padding-top: 160px;
+    padding-bottom: 160px;
+  }
+
+  .grip-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .grip-bg-scene {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.7s ease;
+  }
+  .grip-bg-scene.is-active { opacity: 0.55; }
+
+  .grip-bg-scrim {
+    position: absolute;
+    inset: 0;
+    background: #18181b;
+    opacity: 0.6;
+    transition: opacity 0.7s ease;
+  }
+  .grip-feature.is-scene-active .grip-bg-scrim { opacity: 0.35; }
 
   .grip-badges {
     display: grid;
@@ -1918,29 +2094,93 @@
     margin-top: 48px;
   }
 
+  /* frosted-glass card: a light translucent fill + backdrop blur so
+     whatever sits behind it (the charcoal backdrop, or the thumbnail's
+     own edges) reads through softened, like the card is a pane of
+     frosted glass rather than a flat panel */
   .grip-badge {
-    border: 1px solid rgba(10, 10, 10, 0.12);
-    border-radius: 16px;
-    padding: 28px 22px;
+    background: rgba(255, 237, 215, 0.06);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid rgba(255, 237, 215, 0.18);
+    border-radius: 4px;
+    padding: 10px 10px 26px;
     text-align: center;
+    transition: border-color 0.25s ease, background 0.25s ease;
+  }
+  .grip-badge:hover {
+    background: rgba(255, 237, 215, 0.1);
+    border-color: rgba(255, 237, 215, 0.55);
+  }
+
+  /* photo thumbnail on top; the SVG "certification" icon becomes a small
+     circular badge overlapping its bottom-left corner */
+  /* positioning context for the icon badge below; the image itself gets
+     its own clipped wrapper so the badge can overhang the photo's bottom
+     edge without being cut off by overflow:hidden */
+  .grip-badge-thumb {
+    position: relative;
+    margin-bottom: 20px;
+  }
+
+  .grip-badge-thumb-clip {
+    overflow: hidden;
+    border-radius: 4px;
+    /* shorter than before (was 4/3) so the card takes up less vertical
+       room, leaving more of the full-bleed hover photo behind it
+       visible above/below the grid */
+    aspect-ratio: 16 / 10;
+    /* punch an actual semicircular notch out of the photo's bottom
+       center — a real hole, not a fake fill on top, so whatever is
+       genuinely behind (the card's own frosted glass) shows through it
+       untouched */
+    -webkit-mask-image: radial-gradient(circle at 50% 100%, transparent 20px, black 21px);
+    mask-image: radial-gradient(circle at 50% 100%, transparent 20px, black 21px);
+  }
+
+  .grip-badge-thumb img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .grip-badge:hover .grip-badge-thumb img {
+    transform: scale(1.06);
+  }
+
+  /* just holds/centers the icon in the notch above — no fill of its
+     own, since the notch already reveals the real card background */
+  .grip-badge-icon-wrap {
+    position: absolute;
+    left: 50%;
+    bottom: -20px;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .grip-badge-icon {
-    width: 40px;
-    height: 40px;
-    margin: 0 auto 16px;
-    color: var(--navy);
+    width: 20px;
+    height: 20px;
+    display: block;
+    margin: auto;
+    color: #7fb3e8;
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.9));
   }
 
   .grip-badge-title {
     font-weight: 700;
     font-size: 15px;
-    margin: 0 0 6px;
+    margin: 8px 0 6px;
   }
 
   .grip-badge-body {
     font-size: 13px;
-    color: rgba(10, 10, 10, 0.55);
+    color: rgba(255, 237, 215, 0.6);
     line-height: 1.6;
     margin: 0;
   }
@@ -1980,18 +2220,26 @@
   }
 
   .decrypt-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 13px;
     color: var(--cream);
     background: rgba(255, 237, 215, 0.08);
     border: 1px solid rgba(255, 237, 215, 0.3);
-    border-radius: 8px;
+    border-radius: 999px;
     padding: 9px 18px;
     cursor: pointer;
     transition: background 0.15s ease;
   }
   .decrypt-btn:hover { background: rgba(255, 237, 215, 0.16); }
   .decrypt-btn:disabled { opacity: 0.55; cursor: default; }
+  .decrypt-btn-icon {
+    width: 15px;
+    height: 15px;
+    flex: none;
+  }
 
   .decrypt-result {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
@@ -2006,7 +2254,7 @@
     max-width: 520px;
     background: #0c0c0e;
     border: 1px solid rgba(255, 237, 215, 0.14);
-    border-radius: 10px;
+    border-radius: 4px;
     padding: 18px 20px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 13px;
@@ -2058,26 +2306,109 @@
   .compat-total.is-shown { opacity: 1; }
   .compat-total span { color: #8fd6a8; font-weight: 700; }
 
-  /* ---- drop/vibration test: two stats side by side, same pattern as
-     .stat-section's big-number-plus-caption but twinned ---- */
-  .test-section {
-    max-width: 900px;
-    margin: 0 auto;
-    text-align: center;
+  /* ---- drop/vibration test: everything overlaid on the full-bleed
+     scooter-speed shot, with a black gradient scrim for legibility ---- */
+  .test-feature { padding: 0; }
+
+  .test-figure {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    min-height: min(86vh, 780px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: clamp(44px, 8vh, 90px) 6vw;
+    overflow: hidden;
+  }
+
+  /* photo fills the whole section behind the text */
+  .test-figure img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+  }
+
+  /* the vibration-test photo itself shakes once when the section first
+     scrolls into view — a decaying jitter that settles to still, so the
+     "VIBRATION-TESTED" claim actually gets felt for a second rather than
+     just read. .test-figure's own overflow:hidden keeps every offset
+     safely clipped. */
+  /* more steps than before (was 11) so stretching the duration to 1.5s
+     still reads as a fast, tight buzz rather than a slow wobble — the
+     amplitude ramps up quickly then decays gradually across the full
+     run, alternating direction every step for a rapid jitter */
+  @keyframes testVibrate {
+    0%   { transform: translate(0, 0); }
+    4%   { transform: translate(-3px, 2px); }
+    8%   { transform: translate(4px, -3px); }
+    12%  { transform: translate(-5px, 3px); }
+    16%  { transform: translate(5px, -3px); }
+    20%  { transform: translate(-5px, 2px); }
+    24%  { transform: translate(5px, -2px); }
+    28%  { transform: translate(-4px, 3px); }
+    32%  { transform: translate(4px, -2px); }
+    36%  { transform: translate(-4px, 2px); }
+    40%  { transform: translate(4px, -2px); }
+    44%  { transform: translate(-3px, 2px); }
+    48%  { transform: translate(3px, -1px); }
+    52%  { transform: translate(-3px, 2px); }
+    56%  { transform: translate(3px, -1px); }
+    60%  { transform: translate(-2px, 1px); }
+    64%  { transform: translate(2px, -1px); }
+    68%  { transform: translate(-2px, 1px); }
+    72%  { transform: translate(2px, -1px); }
+    76%  { transform: translate(-1px, 1px); }
+    80%  { transform: translate(1px, -1px); }
+    84%  { transform: translate(-1px, 1px); }
+    88%  { transform: translate(1px, 0); }
+    92%  { transform: translate(-1px, 0); }
+    96%  { transform: translate(1px, 0); }
+    100% { transform: translate(0, 0); }
+  }
+
+  .feature-section.is-revealed .test-figure img {
+    animation: testVibrate 1.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    animation-delay: 0.15s;
+  }
+
+  /* black scrim — heavier top & bottom (where the copy sits), lighter
+     through the middle so the flip-flop still reads */
+  .test-figure::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: linear-gradient(to bottom,
+      rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.35) 34%,
+      rgba(0,0,0,0.3) 62%, rgba(0,0,0,0.85) 100%);
+  }
+
+  .test-overlay,
+  .test-punchline--overlay {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+    text-shadow: 0 2px 14px rgba(0,0,0,0.7);
   }
 
   .test-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 32px;
-    margin-top: 48px;
+    margin-top: 30px;
+    max-width: 620px;
   }
 
   .test-stat-label {
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 13px;
     letter-spacing: 0.05em;
-    color: rgba(255, 237, 215, 0.55);
+    color: rgba(255, 237, 215, 0.7);
     margin-bottom: 10px;
   }
 
@@ -2087,71 +2418,16 @@
     line-height: 1.5;
   }
 
-  .test-punchline {
-    margin-top: 40px;
+  .test-punchline--overlay {
+    margin: 0;
     font-size: clamp(16px, 1.6vw, 20px);
     font-weight: 600;
-  }
-
-  /* full-bleed scooter-speed banner below the stats. breaks out of the
-     section's 6vw padding to span the whole viewport width. */
-  .test-figure {
-    position: relative;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    margin-top: 72px;
-    margin-bottom: -100px; /* cancel the section's bottom padding so the
-                              image sits flush at the section's edge */
-    overflow: hidden;
-  }
-
-  .test-figure img {
-    display: block;
-    width: 100%;
-    height: auto;
-  }
-
-  /* dark scrim up from the bottom so the overlaid punchline stays legible
-     over the busy footboard, plus a soft top scrim to ease the photo's
-     hard top edge into the charcoal section above it */
-  .test-figure::before,
-  .test-figure::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    pointer-events: none;
-  }
-
-  .test-figure::before {
-    top: 0;
-    height: 22%;
-    background: linear-gradient(to bottom, #18181b 0%, transparent 100%);
-  }
-
-  .test-figure::after {
-    bottom: 0;
-    height: 45%;
-    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-  }
-
-  .test-punchline--overlay {
-    position: absolute;
-    left: 50%;
-    bottom: clamp(28px, 5vw, 72px);
-    transform: translateX(-50%);
-    z-index: 1;
-    margin-top: 0;
-    width: min(90%, 640px);
-    text-align: center;
     color: var(--cream);
-    text-shadow: 0 2px 16px rgba(0,0,0,0.8);
   }
 
   @media (max-width: 700px) {
-    .test-stats { grid-template-columns: 1fr; gap: 28px; }
-    .test-figure { margin-top: 48px; }
-    .test-punchline--overlay { bottom: 18px; }
+    .test-stats { grid-template-columns: 1fr; gap: 22px; }
+    .test-figure { min-height: 82vh; }
   }
 
   /* ---- testimonials: same card language as .grip-badge, but built
@@ -2196,7 +2472,7 @@
     flex: 0 0 clamp(240px, 24vw, 320px);
     margin-right: 24px;
     border: 1px solid rgba(10, 10, 10, 0.12);
-    border-radius: 16px;
+    border-radius: 4px;
     padding: 28px 24px;
   }
 
@@ -2246,7 +2522,7 @@
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 12px;
     letter-spacing: 0.05em;
-    color: rgba(10, 10, 10, 0.45);
+    color: rgba(255, 237, 215, 0.5);
     margin-bottom: 20px;
   }
 
@@ -2259,7 +2535,7 @@
 
   .paper-authors {
     font-size: 14px;
-    color: rgba(10, 10, 10, 0.55);
+    color: rgba(255, 237, 215, 0.6);
     margin-bottom: 28px;
     font-style: italic;
   }
@@ -2277,30 +2553,14 @@
     margin: 0 0 32px;
   }
 
-  .paper-links {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-    margin-bottom: 36px;
-    font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
-  }
-
-  .paper-link {
-    border: 1px solid rgba(10, 10, 10, 0.2);
-    border-radius: 999px;
-    padding: 7px 18px;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ink);
-  }
-
   .paper-bibtex-label {
     font-family: -apple-system, "Helvetica Neue", "Noto Sans TC", sans-serif;
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: rgba(10, 10, 10, 0.5);
+    color: rgba(255, 237, 215, 0.5);
+    margin-top: 12px;
     margin-bottom: 10px;
   }
 
@@ -2311,7 +2571,7 @@
   .paper-bibtex {
     background: #0a0a0a;
     color: #d8d8d8;
-    border-radius: 10px;
+    border-radius: 4px;
     padding: 20px 22px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace;
     font-size: 12.5px;
@@ -2483,6 +2743,13 @@
     margin: 0;
   }
 
+  /* "LAMTOR-1" is roughly twice as long as "PRO"/"PLUS" — same clamp
+     shape but scaled down so it doesn't risk overflowing narrow
+     viewports the way the 3-character CJK version did */
+  .pro-hero-word--long {
+    font-size: clamp(44px, 10vw, 170px);
+  }
+
   /* gradient-mask sweep reveal for the LAMTOR-1 eyebrow + PRO wordmark:
      a soft-edged mask (300% wide, wide feather) starts parked to the
      right so the text is fully hidden, then slides left when the
@@ -2615,12 +2882,9 @@
      the .is-dark rules, only the backdrop shifts. */
   .feature-section.bg-charcoal { background: #18181b; }
 
-  /* dark-mode overrides for the grip badges and testimonial cards,
-     needed now that those two sections moved from cream to dark — their
-     ink borders/body text would otherwise vanish on the dark backdrop */
-  .is-dark .grip-badge { border-color: rgba(255, 237, 215, 0.18); }
-  .is-dark .grip-badge-icon { color: #7fb3e8; }
-  .is-dark .grip-badge-body { color: rgba(255, 237, 215, 0.6); }
+  /* dark-mode overrides for the testimonial cards, needed now that that
+     section moved from cream to dark — its ink borders/text would
+     otherwise vanish on the dark backdrop */
   .is-dark .testimonial-card { border-color: rgba(255, 237, 215, 0.18); }
   .is-dark .testimonial-attribution { color: rgba(255, 237, 215, 0.55); }
   .is-dark .testimonial-attribution::before { background: rgba(255, 237, 215, 0.35); }
@@ -2846,29 +3110,47 @@
 </div>
 </div>
 
-<!-- Pro hero title card — same trick as Apple's iPhone Pro page: a
-     huge wordmark colored to match the unit, sitting above a dramatic
-     macro shot of the thing that makes this model "Pro" (the honeycomb
-     massage sole) -->
+<!-- three-hero escalation, in tier order: 標準版 (plain silhouette) ->
+     Plus (woven mesh) -> Pro (honeycomb massage sole), so the flagship
+     lands last instead of leading -->
+
+<!-- standard hero — a clean side-profile silhouette rather than a macro
+     crop, since the base model has no standout texture to zoom into;
+     deliberately the plainest of the three -->
 <section class="pro-hero" data-nav-theme="dark">
-  <p class="pro-hero-eyebrow">LAMTOR-1</p>
-  <h2 class="pro-hero-word">PRO</h2>
+  <p class="pro-hero-eyebrow">標準版</p>
+  <h2 class="pro-hero-word pro-hero-word--long">LAMTOR-1</h2>
   <div class="pro-hero-figure">
-    <img src="assets/props/pro.webp" alt="LAMTOR-1 Pro 蜂巢按摩顆粒特寫">
+    <img loading="lazy" src="assets/props/Lamtor-1-standard.webp" alt="LAMTOR-1 標準版側面剪影">
     <p class="pro-hero-caption">
-      999 顆按摩顆粒，近看比想像中還嚇人，走一趟菜市場，你的腳會先謝謝你
+      波浪紋，最原始的版本，長輩鞋櫃深處，也暗藏一雙祖傳款
     </p>
   </div>
 </section>
 
-<!-- Plus hero — same treatment as Pro, for the woven-mesh model -->
+<!-- Plus hero — same treatment, for the woven-mesh model -->
 <section class="pro-hero" data-nav-theme="dark">
   <p class="pro-hero-eyebrow">LAMTOR-1</p>
   <h2 class="pro-hero-word">PLUS</h2>
   <div class="pro-hero-figure">
-    <img src="assets/props/plus.webp" alt="LAMTOR-1 Plus 菱格編織透明鞋面特寫">
+    <img loading="lazy" src="assets/props/plus.webp" alt="LAMTOR-1 Plus 菱格編織透明鞋面特寫">
     <p class="pro-hero-caption">
       透明菱格編織鞋面，三層配色大底，菜市場走一圈，鄰居都問你在哪買的
+    </p>
+  </div>
+</section>
+
+<!-- Pro hero title card — same trick as Apple's iPhone Pro page: a
+     huge wordmark colored to match the unit, sitting above a dramatic
+     macro shot of the thing that makes this model "Pro" (the honeycomb
+     massage sole). the flagship, landing last on purpose. -->
+<section class="pro-hero" data-nav-theme="dark">
+  <p class="pro-hero-eyebrow">LAMTOR-1</p>
+  <h2 class="pro-hero-word">PRO</h2>
+  <div class="pro-hero-figure">
+    <img loading="lazy" src="assets/props/pro.webp" alt="LAMTOR-1 Pro 蜂巢按摩顆粒特寫">
+    <p class="pro-hero-caption">
+      999 顆按摩顆粒，近看比想像中還嚇人，走一趟菜市場，你的腳會先謝謝你
     </p>
   </div>
 </section>
@@ -2892,8 +3174,18 @@
   </div>
 </section>
 
-<!-- Grip-Locked™ tech — three deadpan "certifications" -->
-<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
+<!-- Grip-Locked™ tech — three deadpan "certifications", each card topped
+     with a real photo of the scene; the SVG icon becomes a small badge
+     overlapping the thumbnail's corner. hovering a card also crossfades
+     that scene in as a full-bleed section background, so the frosted
+     glass cards actually have something behind them to blur -->
+<section class="feature-section is-dark bg-charcoal grip-feature" data-nav-theme="dark" id="gripSection">
+  <div class="grip-bg">
+    <img loading="lazy" class="grip-bg-scene" data-scene="0" src="assets/props/grip-street.webp" alt="">
+    <img loading="lazy" class="grip-bg-scene" data-scene="1" src="assets/props/grip-temple.webp" alt="">
+    <img loading="lazy" class="grip-bg-scene" data-scene="2" src="assets/props/grip-bathroom.webp" alt="">
+    <div class="grip-bg-scrim"></div>
+  </div>
   <div class="grip-section">
     <div class="feature-eyebrow">Grip-Locked™</div>
     <h2 class="feature-title">抓地力，通過三重人生現場認證</h2>
@@ -2901,27 +3193,48 @@
       Grip-Locked™ 防滑技術，通過巷口柏油路、廟埕地磚、以及你家浴室永遠沒乾的那塊瓷磚三重認證
     </p>
     <div class="grip-badges">
-      <div class="grip-badge">
-        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M6 34 L42 34" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          <path d="M10 34c0-10 6-18 14-18s14 8 14 18" stroke="currentColor" stroke-width="2.5"/>
-          <path d="M16 34c0-6 3.5-11 8-11s8 5 8 11" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3"/>
-        </svg>
+      <div class="grip-badge" data-scene="0">
+        <div class="grip-badge-thumb">
+          <div class="grip-badge-thumb-clip">
+            <img loading="lazy" src="assets/props/grip-street.webp" alt="穿著 LAMTOR-1 站在雨後的巷口柏油路上">
+          </div>
+          <span class="grip-badge-icon-wrap">
+            <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 34 L42 34" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M10 34c0-10 6-18 14-18s14 8 14 18" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M16 34c0-6 3.5-11 8-11s8 5 8 11" stroke="currentColor" stroke-width="2" stroke-dasharray="2 3"/>
+            </svg>
+          </span>
+        </div>
         <p class="grip-badge-title">巷口柏油路</p>
         <p class="grip-badge-body">下雨也一樣衝去買飲料</p>
       </div>
-      <div class="grip-badge">
-        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="8" y="8" width="32" height="32" rx="3" stroke="currentColor" stroke-width="2.5"/>
-          <path d="M8 24h32M24 8v32" stroke="currentColor" stroke-width="2"/>
-        </svg>
+      <div class="grip-badge" data-scene="1">
+        <div class="grip-badge-thumb">
+          <div class="grip-badge-thumb-clip">
+            <img loading="lazy" src="assets/props/grip-temple.webp" alt="穿著 LAMTOR-1 站在廟埕濕地磚上">
+          </div>
+          <span class="grip-badge-icon-wrap">
+            <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="8" width="32" height="32" rx="3" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M8 24h32M24 8v32" stroke="currentColor" stroke-width="2"/>
+            </svg>
+          </span>
+        </div>
         <p class="grip-badge-title">廟埕地磚</p>
         <p class="grip-badge-body">拜拜途中不失足</p>
       </div>
-      <div class="grip-badge">
-        <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M24 6c8 8 14 15 14 22a14 14 0 1 1-28 0c0-7 6-14 14-22Z" stroke="currentColor" stroke-width="2.5"/>
-        </svg>
+      <div class="grip-badge" data-scene="2">
+        <div class="grip-badge-thumb">
+          <div class="grip-badge-thumb-clip">
+            <img loading="lazy" src="assets/props/grip-bathroom.webp" alt="穿著 LAMTOR-1 站在濕滑的浴室花磚上">
+          </div>
+          <span class="grip-badge-icon-wrap">
+            <svg class="grip-badge-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M24 6c8 8 14 15 14 22a14 14 0 1 1-28 0c0-7 6-14 14-22Z" stroke="currentColor" stroke-width="2.5"/>
+            </svg>
+          </span>
+        </div>
         <p class="grip-badge-title">永遠沒乾的浴室瓷磚</p>
         <p class="grip-badge-body">洗完澡的最後一道防線</p>
       </div>
@@ -2947,7 +3260,7 @@
         這不是設計缺陷，這是隱私功能
       </p>
       <div class="decrypt-box">
-        <button class="decrypt-btn" type="button">🔒 嘗試解密穿法</button>
+        <button class="decrypt-btn" type="button"><svg class="decrypt-btn-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>嘗試解密穿法</button>
         <span class="decrypt-result" aria-live="polite"></span>
       </div>
     </div>
@@ -3002,27 +3315,25 @@
 
 <!-- drop/vibration test — mimics a phone-durability spec block, then
      drops the actual subject of the test in the last line -->
-<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
-  <div class="test-section">
-    <div class="feature-eyebrow">Durability Testing</div>
-    <h2 class="feature-title">摔過、震過，還是那雙</h2>
-    <div class="test-stats">
-      <div>
-        <div class="test-stat-label">DROP-TESTED</div>
-        <div class="test-stat-value">從機車踏板到柏油路，200 次以上</div>
-      </div>
-      <div>
-        <div class="test-stat-label">VIBRATION-TESTED</div>
-        <div class="test-stat-value">通過全台機車引擎怠速震動測試</div>
+<section class="feature-section is-dark bg-charcoal test-feature" data-nav-theme="dark">
+  <!-- the whole section IS the full-bleed scooter shot; all the copy is
+       overlaid on it over a black gradient scrim -->
+  <div class="test-figure">
+    <img loading="lazy" src="assets/props/scooter-speed.webp" alt="穿著 LAMTOR-1 的腳踩在疾駛的機車踏板上">
+    <div class="test-overlay">
+      <div class="feature-eyebrow">Durability Testing</div>
+      <h2 class="feature-title">摔過、震過，還是那雙</h2>
+      <div class="test-stats">
+        <div>
+          <div class="test-stat-label">DROP-TESTED</div>
+          <div class="test-stat-value">從機車踏板到柏油路，200 次以上</div>
+        </div>
+        <div>
+          <div class="test-stat-label">VIBRATION-TESTED</div>
+          <div class="test-stat-value">通過全台機車引擎怠速震動測試</div>
+        </div>
       </div>
     </div>
-  </div>
-
-  <!-- full-bleed payoff shot: the flip-flop on a scooter footboard at
-       speed (motion blur + vibration rings), with the punchline about
-       the rider's exposed toes overlaid on the very toes in frame -->
-  <div class="test-figure">
-    <img src="assets/props/scooter-speed.webp" alt="穿著 LAMTOR-1 的腳踩在疾駛的機車踏板上">
     <p class="test-punchline test-punchline--overlay">結果：拖鞋沒事，騎士的腳趾，不予置評</p>
   </div>
 </section>
@@ -3080,7 +3391,7 @@
       <h3 class="product-card-name">LAMTOR-1</h3>
       <p class="product-card-tagline">標準版，你家門口那雙</p>
       <div class="product-card-figure">
-        <img class="product-card-img" src="assets/props/lamtor-standard.webp" alt="LAMTOR-1">
+        <img loading="lazy" class="product-card-img" src="assets/props/lamtor-standard.webp" alt="LAMTOR-1">
       </div>
       <div class="product-card-swatches">
         <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
@@ -3095,7 +3406,7 @@
       <h3 class="product-card-name">LAMTOR-1 Plus</h3>
       <p class="product-card-tagline">菱格編織鞋面，防滑大底加強版</p>
       <div class="product-card-figure">
-        <img class="product-card-img" src="assets/props/lamtor-plus.webp" alt="LAMTOR-1 Plus">
+        <img loading="lazy" class="product-card-img" src="assets/props/lamtor-plus.webp" alt="LAMTOR-1 Plus">
       </div>
       <div class="product-card-swatches">
         <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
@@ -3111,7 +3422,7 @@
       <h3 class="product-card-name">LAMTOR-1 Pro</h3>
       <p class="product-card-tagline">蜂巢按摩顆粒，走路兼做腳底按摩</p>
       <div class="product-card-figure">
-        <img class="product-card-img" src="assets/props/lamtor-pro.webp" alt="LAMTOR-1 Pro">
+        <img loading="lazy" class="product-card-img" src="assets/props/lamtor-pro.webp" alt="LAMTOR-1 Pro">
       </div>
       <div class="product-card-swatches">
         <button class="product-swatch is-active" type="button" data-color="blue" aria-label="青天藍"><span class="product-swatch-dot"></span></button>
@@ -3241,21 +3552,18 @@
 
 <!-- fake paper — the reveal that the whole site has been building an
      "open-weight foundation model" bit the entire time -->
-<section class="feature-section" data-nav-theme="light">
+<section class="feature-section is-dark bg-charcoal" data-nav-theme="dark">
   <div class="paper-section">
     <div class="paper-arxiv-id">arXiv:0000.00000 [cs.RO] — Submitted 2026</div>
     <h2 class="paper-title">LAMTOR-1: An Open-Weight Foundation Model for Taiwanese Slip-on Footwear</h2>
     <p class="paper-authors">UX CIRCLES</p>
     <p class="paper-abstract-label">Abstract</p>
     <p class="paper-abstract-body">
-      本研究提出 LAMTOR-1，一個開源、零成本、在無監督環境（騎樓）下訓練完成的拖鞋基礎模型，
-      實驗顯示其在濕滑瓷磚環境下展現高度穩健性，且無需任何形式的韌體更新
+      We present LAMTOR-1, an open-source, zero-cost foundation model for slip-on
+      footwear, trained entirely in an unsupervised environment (the covered
+      arcade). Experiments show strong robustness on wet ceramic tiles, with no
+      firmware update of any kind required.
     </p>
-    <div class="paper-links">
-      <span class="paper-link">GitHub: lamtor-1</span>
-      <span class="paper-link">Paper: arXiv:0000.00000</span>
-      <span class="paper-link">Checkpoint: lamtor-1-pro-max.safetensors</span>
-    </div>
     <p class="paper-bibtex-label">Cite this work</p>
     <div class="paper-bibtex-wrap">
       <button class="paper-copy-btn" id="bibtexCopyBtn" type="button">Copy</button>
@@ -3306,7 +3614,7 @@
       </p>
     </div>
     <div class="air-section-figure">
-      <img src="assets/props/lamtor-air.webp" alt="LAMTOR-1 Air 側面剖面圖">
+      <img loading="lazy" src="assets/props/lamtor-air.webp" alt="LAMTOR-1 Air 側面剖面圖">
     </div>
   </div>
 </section>
@@ -3743,7 +4051,35 @@
     const framePaths = Array.from({ length: FRAME_COUNT }, (_, i) =>
       `images/frame_${String(i + 1).padStart(5, '0')}.webp`
     );
-    framePaths.forEach((src) => { new Image().src = src; });
+    // the full sequence is ~15MB (180 frames) — firing every request at
+    // once on page load competed with everything else for bandwidth
+    // right when the hero itself needs to be responsive. instead:
+    // eagerly grab only the frames the user can realistically reach
+    // before the browser goes idle, then trickle the rest in small
+    // batches whenever the main thread has spare time.
+    const EAGER_FRAME_COUNT = 30;
+    framePaths.slice(0, EAGER_FRAME_COUNT).forEach((src) => { new Image().src = src; });
+
+    (function preloadRemainingFrames() {
+      const BATCH_SIZE = 12;
+      let i = EAGER_FRAME_COUNT;
+      function loadBatch(deadline) {
+        while (i < framePaths.length && (!deadline || deadline.timeRemaining() > 0 || i < EAGER_FRAME_COUNT + BATCH_SIZE)) {
+          new Image().src = framePaths[i];
+          i++;
+          if ((i - EAGER_FRAME_COUNT) % BATCH_SIZE === 0) break;
+        }
+        if (i < framePaths.length) schedule();
+      }
+      function schedule() {
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadBatch, { timeout: 1000 });
+        } else {
+          setTimeout(() => loadBatch(null), 200);
+        }
+      }
+      schedule();
+    })();
     let currentFrame = -1;
 
     const clamp01 = (n) => Math.max(0, Math.min(1, n));
@@ -4248,6 +4584,13 @@
     obs.observe(el);
   }
 
+  // generic mist-rise reveal for every ordinary feature-section's
+  // headline copy (see the CSS rules above) — just flips one class per
+  // section the first time it's a quarter into view
+  document.querySelectorAll('.feature-section').forEach((section) => {
+    onFirstInView(section, () => section.classList.add('is-revealed'), 0.25);
+  });
+
   // encryption: scramble-then-decode the title, plus a "解密穿法" button
   // whose fake decryption always fails
   (function () {
@@ -4257,17 +4600,29 @@
       const real = target.dataset.text;
       const chars = Array.from(real);
       onFirstInView(target, () => {
-        let frame = 0;
-        (function tick() {
-          const revealed = Math.floor(frame / 3);
-          target.textContent = chars.map((c, i) => {
-            if (i < revealed || c === '，') return c;
-            return CIPHER[Math.floor(Math.random() * CIPHER.length)];
-          }).join('');
-          frame++;
-          if (revealed <= chars.length) requestAnimationFrame(tick);
-          else target.textContent = real;
-        })();
+        function tick() {
+          let frame = 0;
+          (function step() {
+            const revealed = Math.floor(frame / 3);
+            target.textContent = chars.map((c, i) => {
+              if (i < revealed || c === '，') return c;
+              return CIPHER[Math.floor(Math.random() * CIPHER.length)];
+            }).join('');
+            frame++;
+            if (revealed <= chars.length) requestAnimationFrame(step);
+            else target.textContent = real;
+          })();
+        }
+        // the title stays hidden (see .decode-target CSS) until this
+        // fires, so the delay is actually visible instead of the text
+        // just sitting there fully-formed the whole time. fade it fully
+        // into view first, then only start the scramble once that
+        // transition has finished — not simultaneously. total time from
+        // trigger to scramble start: 600ms.
+        setTimeout(() => {
+          target.classList.add('is-decoding');
+          setTimeout(tick, 400);
+        }, 200);
       });
     }
     const btn = document.querySelector('.decrypt-btn');
@@ -4307,7 +4662,7 @@
     ];
     onFirstInView(term, () => {
       let i = 0;
-      (function next() {
+      function next() {
         if (i >= lines.length) {
           const cur = document.createElement('span');
           cur.className = 'term-cursor';
@@ -4321,7 +4676,11 @@
         term.appendChild(div);
         i++;
         setTimeout(next, 380 + Math.random() * 260);
-      })();
+      }
+      // wait for the section's own headline copy (eyebrow/title/body) to
+      // finish its mist-rise reveal before the terminal starts typing,
+      // instead of firing immediately on its own independent scroll timing
+      setTimeout(next, 450);
     }, 0.3);
   })();
 
@@ -4332,10 +4691,13 @@
     const items = Array.from(list.children);
     const total = document.querySelector('.compat-total');
     onFirstInView(list, () => {
+      // same 450ms head start as the terminal, so the checklist also
+      // waits for the headline copy's mist-rise to land first
+      const startDelay = 450;
       items.forEach((li, i) => {
-        setTimeout(() => li.classList.add('is-shown'), i * 420);
+        setTimeout(() => li.classList.add('is-shown'), startDelay + i * 420);
       });
-      setTimeout(() => total && total.classList.add('is-shown'), items.length * 420 + 250);
+      setTimeout(() => total && total.classList.add('is-shown'), startDelay + items.length * 420 + 250);
     }, 0.3);
   })();
 
@@ -4343,6 +4705,30 @@
   (function () {
     const closing = document.querySelector('.closing-section');
     onFirstInView(closing, () => closing.classList.add('is-revealed'), 0.25);
+  })();
+
+  // grip section: hovering (or focusing/tapping) a badge crossfades in a
+  // full-bleed background photo of that scene behind the whole section
+  (function () {
+    const section = document.getElementById('gripSection');
+    if (!section) return;
+    const scenes = section.querySelectorAll('.grip-bg-scene');
+    const badges = section.querySelectorAll('.grip-badge');
+    function activate(idx) {
+      scenes.forEach((s) => s.classList.toggle('is-active', s.dataset.scene === idx));
+      section.classList.add('is-scene-active');
+    }
+    function clear() {
+      section.classList.remove('is-scene-active');
+      scenes.forEach((s) => s.classList.remove('is-active'));
+    }
+    badges.forEach((badge) => {
+      const idx = badge.dataset.scene;
+      badge.addEventListener('mouseenter', () => activate(idx));
+      badge.addEventListener('mouseleave', clear);
+      badge.addEventListener('focus', () => activate(idx));
+      badge.addEventListener('blur', clear);
+    });
   })();
 
   // product lineup color switcher — each card tracks its own selected
