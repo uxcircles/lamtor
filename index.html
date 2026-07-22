@@ -2820,7 +2820,9 @@
   .pro-hero-figure {
     position: relative;
     width: 100%;
-    margin-top: -4vw;
+    /* base value is for the standard-model figure (no modifier class);
+       Plus/Pro sit slightly further down via their own modifiers below */
+    margin-top: -5vw;
     /* clips the always-slightly-larger image so the scroll parallax
        (JS below) can shift it up/down within the overflow budget
        without ever exposing the cutout's edges against the black */
@@ -2829,6 +2831,9 @@
        below fades it in high, then drops it down into place */
     opacity: 0;
   }
+
+  .pro-hero-figure--plus { margin-top: -4vw; }
+  .pro-hero-figure--pro { margin-top: -2vw; }
 
   /* shoe entrance: a simple fade-in (no up/down move), delayed so it
      appears AFTER the title has swept in. only opacity animates here, so
@@ -2885,6 +2890,16 @@
     line-height: 1.7;
     text-shadow: 0 2px 16px rgba(0,0,0,0.7);
     margin: 0;
+  }
+
+  /* sits in normal flow directly under the wordmark instead of overlaid
+     on the photo — no absolute positioning, no scrim needed since it's
+     not sitting on top of the image anymore */
+  .pro-hero-caption--top {
+    position: static;
+    transform: none;
+    margin: 18px auto 0;
+    text-shadow: none;
   }
 
   /* per-character blur-in: JS splits the caption into .ch spans and sets
@@ -3156,11 +3171,11 @@
 <section class="pro-hero" data-nav-theme="dark">
   <p class="pro-hero-eyebrow">標準版</p>
   <h2 class="pro-hero-word pro-hero-word--long">LAMTOR-1</h2>
+  <p class="pro-hero-caption pro-hero-caption--top">
+    波浪紋，最原始的版本，長輩鞋櫃深處，也暗藏一雙祖傳款
+  </p>
   <div class="pro-hero-figure">
     <img loading="lazy" src="assets/props/Lamtor-1-standard.webp" alt="LAMTOR-1 標準版側面剪影">
-    <p class="pro-hero-caption">
-      波浪紋，最原始的版本，長輩鞋櫃深處，也暗藏一雙祖傳款
-    </p>
   </div>
 </section>
 
@@ -3168,11 +3183,11 @@
 <section class="pro-hero" data-nav-theme="dark">
   <p class="pro-hero-eyebrow">LAMTOR-1</p>
   <h2 class="pro-hero-word">PLUS</h2>
-  <div class="pro-hero-figure">
+  <p class="pro-hero-caption pro-hero-caption--top">
+    透明菱格編織鞋面，三層配色大底，菜市場走一圈，鄰居都問你在哪買的
+  </p>
+  <div class="pro-hero-figure pro-hero-figure--plus">
     <img loading="lazy" src="assets/props/plus.webp" alt="LAMTOR-1 Plus 菱格編織透明鞋面特寫">
-    <p class="pro-hero-caption">
-      透明菱格編織鞋面，三層配色大底，菜市場走一圈，鄰居都問你在哪買的
-    </p>
   </div>
 </section>
 
@@ -3183,11 +3198,11 @@
 <section class="pro-hero" data-nav-theme="dark">
   <p class="pro-hero-eyebrow">LAMTOR-1</p>
   <h2 class="pro-hero-word">PRO</h2>
-  <div class="pro-hero-figure">
+  <p class="pro-hero-caption pro-hero-caption--top">
+    999 顆按摩顆粒，近看比想像中還嚇人，走一趟菜市場，你的腳會先謝謝你
+  </p>
+  <div class="pro-hero-figure pro-hero-figure--pro">
     <img loading="lazy" src="assets/props/pro.webp" alt="LAMTOR-1 Pro 蜂巢按摩顆粒特寫">
-    <p class="pro-hero-caption">
-      999 顆按摩顆粒，近看比想像中還嚇人，走一趟菜市場，你的腳會先謝謝你
-    </p>
   </div>
 </section>
 
@@ -3697,6 +3712,12 @@
 <div class="cursor-dot" id="cursorDot"></div>
 
 <script>
+  // Refresh/reload always lands back at the top instead of the browser
+  // restoring wherever you'd scrolled to — must run before anything else
+  // touches scroll position.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
   // Once the intro scan overlay (reticle + line-trace) has faded out,
   // remove it from the DOM entirely so it can never sit on top of the
   // real flip-flop and swallow hover/click events.
@@ -4316,10 +4337,14 @@
       balconyShade.style.opacity = String(bgIn);
 
       // Powered-by-barefoot beat: the hand then eases smaller around
-      // the shoe's center like the shoe is being held up and presented
+      // the shoe's center like the shoe is being held up and presented.
+      // on narrow screens the shoe is already fairly small on-screen, so
+      // shrinking it by the same 18% as desktop reads as it vanishing
+      // into the surrounding scene — a gentler shrink there instead.
       const present = clamp01((p3 - 0.6) / 0.2);
+      const presentShrink = window.innerWidth <= 700 ? 0.08 : 0.18;
       flipflopHand.style.opacity = String(swap);
-      flipflopHand.style.transform = `scale(${1 - present * 0.18})`;
+      flipflopHand.style.transform = `scale(${1 - present * presentShrink})`;
 
       // final beat: the backdrop steps out of the balcony and into the
       // arcade street as the warning label types itself in on the right.
@@ -4541,7 +4566,12 @@
       span.className = 'ch';
       // keep spaces from collapsing so layout is preserved
       span.textContent = chr === ' ' ? ' ' : chr;
-      span.style.transitionDelay = (i * 0.045).toFixed(3) + 's';
+      // 1.5s base delay so the caption only starts appearing once the
+      // eyebrow/wordmark's own mask-sweep reveal (delay 0.35s + 1.1s
+      // transition ≈ 1.45s) has finished, instead of racing it — only
+      // matters for the --top captions, which now sit right under the
+      // wordmark and would otherwise trigger at nearly the same time.
+      span.style.transitionDelay = (1.5 + i * 0.045).toFixed(3) + 's';
       caption.appendChild(span);
     });
     const observer = new IntersectionObserver((entries) => {
