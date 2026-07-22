@@ -158,64 +158,31 @@
     animation-delay: 1.36s;
   }
 
-  /* dappled light drifting slowly and irregularly across the whole scene,
-     like sunlight shifting through branches/blinds swaying outside a
-     window. sits above everything (even the props) since real light
-     plays across objects too, not just the background — soft-light blend
-     + low opacity keeps it a subtle wash rather than a visible shape.
-     the keyframes are deliberately uneven (not a simple back-and-forth)
-     so it reads as organic wind rather than a mechanical loop. */
-  /* shadow-first, not light-first: several small dark blurred blobs
-     (standing in for leaf/branch shadows) each get their OWN position in
-     the background-position list, and that whole list is animated with
-     hand-authored, non-matching deltas per keyframe — so the blobs don't
-     drift together as one shape, they flicker/shift independently, which
-     reads as scattered foliage shadow rustling instead of a single cloud
-     sliding across. multiply blend darkens what's under it and leaves
-     already-bright wood untouched, which suits shadow much better than
-     overlay/soft-light did. faster cycle (6s) for a quicker flutter. */
-  .light-wind {
+  /* real photographed leaf/branch shadow (not the old hand-built radial-
+     gradient blobs) laid over the whole tabletop scene, drifting like
+     wind moving the branches outside. sits above the props (like real
+     light falling across objects, not just the background) but below
+     .transition-mask (9) so the exit transition's fade-to-black still
+     covers it. multiply blend darkens the wood underneath and leaves
+     already-bright areas alone. */
+  .tree-shadow-overlay {
     position: absolute;
+    /* 10% larger than the frame on every side (same trick the old
+       gradient version used) so windShadow's translate has room to pan
+       around without ever revealing a bare edge — background-size
+       stretches the image to fill this enlarged box, so it stays at the
+       frame's own 1536:1024 proportions, just scaled up 1.2x. */
     inset: -10%;
-    /* blobs sitting over the newspaper (bottom-right, roughly x:65-100%,
-       y:37-100%) are given lower alpha (~0.15-0.2 instead of ~0.4-0.55) —
-       multiply reads much darker on the newspaper's pale paper than on
-       the mid-tone wood, same issue as the flip-flop earlier. */
-    background-image:
-      radial-gradient(ellipse 4% 6% at 15% 18%, rgba(6, 4, 2, 0.55), transparent 75%),
-      radial-gradient(ellipse 5% 3.5% at 85% 72%, rgba(6, 4, 2, 0.18), transparent 75%),
-      radial-gradient(ellipse 3.5% 5.5% at 15% 78%, rgba(6, 4, 2, 0.45), transparent 75%),
-      radial-gradient(ellipse 6% 4% at 65% 50%, rgba(6, 4, 2, 0.2), transparent 75%),
-      radial-gradient(ellipse 4.5% 3% at 35% 30%, rgba(6, 4, 2, 0.4), transparent 75%),
-      radial-gradient(ellipse 3% 4.5% at 55% 12%, rgba(6, 4, 2, 0.4), transparent 75%),
-      radial-gradient(ellipse 5% 3.5% at 30% 60%, rgba(6, 4, 2, 0.4), transparent 75%),
-      radial-gradient(ellipse 3.5% 5% at 92% 45%, rgba(6, 4, 2, 0.15), transparent 75%),
-      radial-gradient(ellipse 4% 3% at 45% 88%, rgba(6, 4, 2, 0.4), transparent 75%),
-      radial-gradient(ellipse 3% 4% at 8% 45%, rgba(6, 4, 2, 0.35), transparent 75%),
-      radial-gradient(ellipse 4% 3% at 25% 5%, rgba(6, 4, 2, 0.35), transparent 75%),
-      radial-gradient(ellipse 3.5% 3% at 60% 68%, rgba(6, 4, 2, 0.3), transparent 75%),
-      radial-gradient(ellipse 3% 5% at 40% 45%, rgba(6, 4, 2, 0.25), transparent 75%);
-    background-repeat: no-repeat;
+    background-image: url('assets/props/tree-shadow.webp');
+    background-size: 100% 100%;
     mix-blend-mode: multiply;
-    filter: blur(2px);
     opacity: 0;
     pointer-events: none;
-    /* stays above props (z-index up to ~7, "light plays across objects
-       too") but below .transition-mask (9) — otherwise the exit
-       transition's fade-to-black couldn't cover it and it would sit on
-       top of the black mask instead of disappearing with the table. */
     z-index: 8;
-    /* two animations: windShadow drifts it forever (transform), and
-       windFadeIn (opacity, one-shot) brings it in on the same timing
-       slot as .photo-frame-bg so the shadow only appears once the wood
-       it's supposed to be shadowing is actually visible. the whole
-       layer physically translates by real pixel amounts (not a subtle
-       %/background-position nudge) so the motion is unmistakable no
-       matter how small the individual blobs are — this is the same
-       technique as a CSS "parallax drift", just applied to shadow blobs
-       instead of a background image. inset:-10% gives it room to slide
-       without ever revealing an edge. */
-    animation: windShadow 5s ease-in-out infinite, windFadeIn 0.5s ease-out forwards;
+    /* windShadow drifts it forever, bgFadeIn brings it in once (same
+       timing slot as .photo-frame-bg, so it only appears once the wood
+       it's shadowing is actually visible) */
+    animation: windShadow 9s ease-in-out infinite, bgFadeIn 0.5s ease-out forwards;
     animation-delay: 0s, 1.36s;
   }
 
@@ -227,59 +194,6 @@
     100% { transform: translate(0px, 0px); }
   }
 
-  @keyframes windFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 0.6; }
-  }
-
-  /* a long, thin streak of shadow tilted ~45deg in the top-right, echoing
-     the diagonal window-light streaks already baked into the background
-     photo. it's a separate element (not one of the .light-wind blobs)
-     because a single background-image gradient can't be individually
-     rotated — the outer div holds the fixed 45deg tilt + position, the
-     inner div is what actually drifts (its own transform doesn't fight
-     the parent's rotate since each element's transform is independent). */
-  .light-wind-streak {
-    position: absolute;
-    top: 4%;
-    right: -4%;
-    width: 34%;
-    height: 10%;
-    transform: rotate(-45deg);
-    /* see .light-wind's z-index comment — same reasoning, needs to sit
-       below .transition-mask (9) so the exit transition can cover it. */
-    z-index: 8;
-    pointer-events: none;
-    overflow: visible;
-    /* same reasoning as .frame-overlay/.light-wind: this is meant to
-       read as light falling across the wood table, so it shouldn't be
-       visible before the table itself is. */
-    opacity: 0;
-    animation: bgFadeIn 0.5s ease-out forwards;
-    animation-delay: 1.36s;
-  }
-
-  .light-wind-streak-inner {
-    position: absolute;
-    inset: -60%;
-    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(196, 162, 118, 0.55), transparent 72%);
-    mix-blend-mode: multiply;
-    filter: blur(3px);
-    animation: windShadow 5s ease-in-out infinite;
-  }
-
-  .light-wind-streak.is-second {
-    top: 16%;
-    right: -10%;
-    width: 26%;
-    height: 11%;
-  }
-
-  .light-wind-streak.is-second .light-wind-streak-inner {
-    background: radial-gradient(ellipse 22% 10% at 50% 50%, rgba(216, 182, 138, 0.5), transparent 72%);
-    animation-delay: -2s; /* offset so the two streaks don't drift in lockstep */
-  }
-
   /* the exit transition (see the JS scroll handler) toggles this on
      .body once scrolling starts. display:none — not just pausing the
      animation — because mix-blend-mode layers force the browser to
@@ -287,11 +201,10 @@
      nearby changes (like .transition-mask's opacity), regardless of
      whether their own animation is running; only fully removing them
      from the render tree actually eliminates that cost. safe to cut
-     abruptly since they're a subtle background texture, not something
-     a sudden disappearance draws attention to — especially while the
-     mask is also darkening the whole scene at the same moment. */
-  body.is-exiting .light-wind,
-  body.is-exiting .light-wind-streak {
+     abruptly since it's a subtle background texture, not something a
+     sudden disappearance draws attention to — especially while the mask
+     is also darkening the whole scene at the same moment. */
+  body.is-exiting .tree-shadow-overlay {
     display: none;
   }
 
@@ -2985,9 +2898,7 @@
   <div class="photo-frame">
     <div class="photo-frame-bg"></div>
     <div class="frame-overlay"></div>
-    <div class="light-wind"></div>
-    <div class="light-wind-streak"><div class="light-wind-streak-inner"></div></div>
-    <div class="light-wind-streak is-second"><div class="light-wind-streak-inner"></div></div>
+    <div class="tree-shadow-overlay"></div>
 
     <div class="prop prop-bowl"    data-depth="0.35"><img src="assets/props/bowl-cutout.webp" alt=""></div>
     <div class="prop prop-spoon"   data-depth="0.45"><img src="assets/props/spoon-cutout.webp" alt=""></div>
