@@ -1515,6 +1515,10 @@
   .buy-btn {
     margin-top: 20px;
     padding: 10px 30px;
+    /* fixed-ish width so the label swapping Buy -> 確認庫存中... -> Sold
+       Out doesn't jitter the button's size mid-sequence */
+    min-width: 108px;
+    text-align: center;
     border: none;
     border-radius: 999px;
     background: var(--navy);
@@ -1522,11 +1526,30 @@
     font-size: 14px;
     font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s ease, transform 0.1s ease;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
   }
 
   .buy-btn:hover { background: #164680; }
   .buy-btn:active { transform: scale(0.96); }
+
+  .buy-btn:disabled {
+    background: rgba(10, 10, 10, 0.15);
+    color: rgba(10, 10, 10, 0.4);
+    cursor: not-allowed;
+  }
+
+  /* the "nope, not happening" headshake the button gives right as it
+     lands on Sold Out */
+  @keyframes buyShake {
+    0%, 100% { transform: translateX(0); }
+    20%  { transform: translateX(-6px); }
+    40%  { transform: translateX(5px); }
+    60%  { transform: translateX(-4px); }
+    80%  { transform: translateX(3px); }
+  }
+  .buy-btn.is-sold-out {
+    animation: buyShake 0.45s ease;
+  }
 
   /* ---- compare table (Apple-style label column + one column per
      model) ----
@@ -1965,6 +1988,19 @@
     max-width: 900px;
     height: auto;
     filter: drop-shadow(0 20px 34px rgba(0,0,0,0.5));
+    /* slides in from the right into its resting position, arriving
+       after the eyebrow/title/body copy (which uses the shared
+       mist-rise tier). .air-feature already has overflow:hidden, so the
+       starting offset never causes a horizontal scrollbar. */
+    opacity: 0;
+    transform: translateX(90px);
+    transition: opacity 1s ease, transform 1s cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: 0.3s;
+  }
+
+  .feature-section.is-revealed .air-section-figure img {
+    opacity: 1;
+    transform: translateX(0);
   }
 
   .air-section-copy .feature-title { color: var(--cream); }
@@ -2784,7 +2820,7 @@
   .pro-hero-figure {
     position: relative;
     width: 100%;
-    margin-top: 1vw;
+    margin-top: -4vw;
     /* clips the always-slightly-larger image so the scroll parallax
        (JS below) can shift it up/down within the overflow budget
        without ever exposing the cutout's edges against the black */
@@ -3399,7 +3435,7 @@
         <p class="product-card-colorname">青天藍</p>
       </div>
       <div class="product-card-footline">從有記憶以來，它就在那裡</div>
-      <button class="buy-btn" type="button">Buy</button>
+      <button class="buy-btn" type="button" data-model="LAMTOR-1">Buy</button>
     </div>
 
     <div class="product-card" data-color="blue">
@@ -3415,7 +3451,7 @@
         <p class="product-card-colorname">青天藍</p>
       </div>
       <div class="product-card-footline">多了紋路，多了一種「我很講究」的錯覺</div>
-      <button class="buy-btn" type="button">Buy</button>
+      <button class="buy-btn" type="button" data-model="LAMTOR-1 Plus">Buy</button>
     </div>
 
     <div class="product-card" data-color="blue">
@@ -3430,7 +3466,7 @@
         <p class="product-card-colorname">青天藍</p>
       </div>
       <div class="product-card-footline">長輩級信仰之作，一穿就回不去</div>
-      <button class="buy-btn" type="button">Buy</button>
+      <button class="buy-btn" type="button" data-model="LAMTOR-1 Pro">Buy</button>
     </div>
 
   </div>
@@ -3645,15 +3681,15 @@
   <div class="product-float-bar-inner">
     <div class="product-float-item">
       <span class="product-float-name">LAMTOR-1</span>
-      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+      <button class="buy-btn buy-btn--small" type="button" data-model="LAMTOR-1">Buy</button>
     </div>
     <div class="product-float-item">
       <span class="product-float-name">LAMTOR-1 Plus</span>
-      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+      <button class="buy-btn buy-btn--small" type="button" data-model="LAMTOR-1 Plus">Buy</button>
     </div>
     <div class="product-float-item">
       <span class="product-float-name">LAMTOR-1 Pro</span>
-      <button class="buy-btn buy-btn--small" type="button">Buy</button>
+      <button class="buy-btn buy-btn--small" type="button" data-model="LAMTOR-1 Pro">Buy</button>
     </div>
   </div>
 </div>
@@ -4728,6 +4764,47 @@
       badge.addEventListener('mouseleave', clear);
       badge.addEventListener('focus', () => activate(idx));
       badge.addEventListener('blur', clear);
+    });
+  })();
+
+  // Buy buttons: a fake "checking stock" beat (same dots pattern as the
+  // decrypt button) that always resolves to Sold Out, with a little
+  // headshake as it lands. each model (LAMTOR-1 / Plus / Pro) has TWO
+  // buttons on the page — one in the product card, one in the sticky
+  // float bar — matched by data-model, so clicking either one sells out
+  // both together instead of leaving them out of sync.
+  (function () {
+    const soldModels = new Set();
+    const buttonsByModel = {};
+    document.querySelectorAll('.buy-btn[data-model]').forEach((btn) => {
+      const model = btn.dataset.model;
+      (buttonsByModel[model] || (buttonsByModel[model] = [])).push(btn);
+    });
+
+    function sellOut(model) {
+      if (soldModels.has(model)) return;
+      soldModels.add(model);
+      const btns = buttonsByModel[model] || [];
+      btns.forEach((btn) => { btn.disabled = true; });
+      let dots = 0;
+      const iv = setInterval(() => {
+        dots = (dots + 1) % 4;
+        const label = '確認庫存中' + '.'.repeat(dots);
+        btns.forEach((btn) => { btn.textContent = label; });
+      }, 300);
+      setTimeout(() => {
+        clearInterval(iv);
+        btns.forEach((btn) => {
+          btn.textContent = 'Sold Out';
+          btn.classList.add('is-sold-out');
+        });
+      }, 1300);
+    }
+
+    Object.keys(buttonsByModel).forEach((model) => {
+      buttonsByModel[model].forEach((btn) => {
+        btn.addEventListener('click', () => sellOut(model));
+      });
     });
   })();
 
